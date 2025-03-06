@@ -1,0 +1,19 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <!-- 金色渐变，彰显高端质感 -->
+        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#000000" stop-opacity="1"/>
+            <stop offset="100%" stop-color="#000000" stop-opacity="1"/>
+        </linearGradient>
+        <!-- 箭头标记，增强飞行路线动感 -->
+        <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="0" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L6,3 Z" fill="url(#gradient)"/>
+        </marker>
+    </defs>
+    <!-- 旅行箱轮廓 -->
+    <path d="M12,24 Q12,18 18,18 H46 Q52,18 52,24 V40 Q52,46 46,46 H18 Q12,46 12,40 Z" fill="none" stroke="url(#gradient)" stroke-width="2"/>
+    <!-- 优雅的手柄及集成飞机剪影 -->
+    <path d="M22,18 Q22,12 32,12 Q42,12 42,18" fill="none" stroke="url(#gradient)" stroke-width="2"/>
+    <!-- 曲线飞行路线，寓意旅行的动态感 -->
+    <path d="M14,36 C20,30 28,30 34,36 S48,42 54,36" fill="none" stroke="url(#gradient)" stroke-width="2" marker-end="url(#arrowhead)"/>
+</svg>
