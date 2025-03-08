@@ -8,7 +8,7 @@
         width="160"
       >
         <div class="logo-container">
-          <img src="../../public/assets/漫城方略.svg" alt="logo" class="logo-image" />
+          <img src="../assets/漫城方略.svg" alt="logo" class="logo-image" />
           <span v-if="!collapsed" class="logo-text">漫程方略</span>
         </div>
         <a-menu
@@ -21,26 +21,19 @@
             <span>plan</span>
           </a-menu-item>
           <a-menu-item key="/attractions">
-            <desktop-outlined style="font-size: 20px" />
+            <search-outlined style="font-size: 20px" />
             <span>景点广场</span>
           </a-menu-item>
-          <a-sub-menu key="sub1">
-            <template #title>
-              <span>
-                <user-outlined style="font-size: 20px" />
-                <span>User</span>
-              </span>
-            </template>
-            <a-menu-item key="/user/tom">Tom</a-menu-item>
-            <a-menu-item key="/user/bill">Bill</a-menu-item>
-            <a-menu-item key="/user/alex">Alex</a-menu-item>
-          </a-sub-menu>
+          <a-menu-item key="/star">
+            <star-outlined style="font-size: 20px" />
+            <span>我的景点</span>
+          </a-menu-item>
           <a-menu-item key="/history">
-            <file-outlined style="font-size: 20px" />
-            <span>历史计划</span>
+            <container-outlined style="font-size: 20px" />
+            <span>我的计划</span>
           </a-menu-item>
           <a-menu-item key="/chat">
-            <file-outlined style="font-size: 20px" />
+            <history-outlined style="font-size: 20px" />
             <span>聊天历史</span>
           </a-menu-item>
         </a-menu>
@@ -50,7 +43,7 @@
           <router-view />
         </a-layout-content>
         <a-layout-footer class="layout-footer">
-          Travel Agent ©2025 Created by mkl
+          © 2025 TravelPlanner. All rights reserved.
         </a-layout-footer>
       </a-layout>
     </a-layout>
@@ -59,10 +52,12 @@
 
 <script lang="ts" setup>
 import {
-  DesktopOutlined,
+  SearchOutlined,
   UserOutlined,
-  FileOutlined,
   CommentOutlined,
+  StarOutlined,
+  HistoryOutlined,
+  ContainerOutlined,
 } from "@ant-design/icons-vue";
 import { ref, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
@@ -86,4 +81,42 @@ const handleMenuSelect = ({ key }: { key: string }) => {
 };
 </script>
 
-<style scoped src="./BasicLayout.css"></style>
+<style scoped>
+.basic-layout-container {
+  min-height: 100vh;
+}
+
+.logo-container {
+  display: flex;
+  align-items: flex-end;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.2);
+  margin: 16px;
+}
+
+.logo-image {
+  width: 50px;
+  height: 50px;
+  margin-right: 15px;
+}
+
+.logo-text {
+  font-weight: bold;
+  font-family: Arial, sans-serif;
+  font-size: 20px;
+  width: 40px;
+  height: 40px;
+  margin-right: 15px;
+}
+
+.layout-footer {
+  text-align: center;
+  background: rgba(239, 239, 239, 0.42);
+  padding: 10px 0;
+}
+
+/* 保留原有作用域样式 */
+[data-theme="light"] .site-layout .site-layout-background {
+  background: #ffffff;
+}
+</style>
