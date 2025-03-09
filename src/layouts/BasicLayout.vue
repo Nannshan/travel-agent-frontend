@@ -6,9 +6,17 @@
         collapsible
         theme="light"
         width="160"
+        :style="{
+          overflow: 'auto',
+          height: '100vh',
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          bottom: 0,
+        }"
       >
         <div class="logo-container">
-          <img src="../assets/漫城方略.svg" alt="logo" class="logo-image" />
+          <img src="../assets/logo.svg" alt="logo" class="logo-image" />
           <span v-if="!collapsed" class="logo-text">漫程方略</span>
         </div>
         <a-menu
@@ -39,12 +47,9 @@
         </a-menu>
       </a-layout-sider>
       <a-layout>
-        <a-layout-content>
+        <a-layout-content :style="{ marginLeft: collapsed ? '80px' : '160px' }">
           <router-view />
         </a-layout-content>
-        <a-layout-footer class="layout-footer">
-          © 2025 TravelPlanner. All rights reserved.
-        </a-layout-footer>
       </a-layout>
     </a-layout>
   </div>
@@ -53,7 +58,6 @@
 <script lang="ts" setup>
 import {
   SearchOutlined,
-  UserOutlined,
   CommentOutlined,
   StarOutlined,
   HistoryOutlined,
@@ -84,6 +88,7 @@ const handleMenuSelect = ({ key }: { key: string }) => {
 <style scoped>
 .basic-layout-container {
   min-height: 100vh;
+  background: #fff;
 }
 
 .logo-container {
@@ -109,13 +114,15 @@ const handleMenuSelect = ({ key }: { key: string }) => {
   margin-right: 15px;
 }
 
-.layout-footer {
-  text-align: center;
-  background: rgba(239, 239, 239, 0.42);
-  padding: 10px 0;
+:deep(.ant-layout-footer) {
+  padding: 2px 0;
+  min-height: unset;
 }
 
-/* 保留原有作用域样式 */
+:deep(.ant-layout) {
+  background: #fff;
+}
+
 [data-theme="light"] .site-layout .site-layout-background {
   background: #ffffff;
 }

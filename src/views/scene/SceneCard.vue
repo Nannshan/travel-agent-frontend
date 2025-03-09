@@ -1,5 +1,10 @@
 <template>
-  <a-card hoverable class="scene-card" :bordered="false">
+  <a-card
+    hoverable
+    class="scene-card"
+    :bordered="false"
+    @click="handleCardClick"
+  >
     <template #cover>
       <div class="image-wrapper">
         <img :alt="scene.name" :src="scene.imgurl.split(';')[0]" />
@@ -46,13 +51,19 @@ import {
   StarOutlined,
   ShoppingOutlined,
 } from "@ant-design/icons-vue";
+import { useRouter } from "vue-router";
 
-defineProps({
+const router = useRouter();
+const props = defineProps({
   scene: {
     type: Object,
     required: true,
   },
 });
+
+const handleCardClick = () => {
+  router.push(`/scene/${props.scene.id}`);
+};
 </script>
 
 <style scoped>

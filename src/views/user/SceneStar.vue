@@ -111,7 +111,7 @@ onMounted(() => {
 
 <style scoped>
 .scene-star-container {
-  height: calc(100vh - 64px); /* 减去顶部导航栏的高度 */
+  height: 100vh; /* 减去顶部导航栏的高度 */
   display: flex;
   flex-direction: column;
   background-color: #ffffff;
