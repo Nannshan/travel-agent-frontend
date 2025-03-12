@@ -23,28 +23,31 @@
           v-model:selectedKeys="selectedKeys"
           mode="inline"
           @select="handleMenuSelect"
+          class="main-menu"
         >
-          <a-menu-item key="/plan">
+          <a-menu-item key="/agent">
             <comment-outlined style="font-size: 20px" />
-            <span>plan</span>
+            <span>旅行规划</span>
           </a-menu-item>
-          <a-menu-item key="/attractions">
+          <a-menu-item key="/scene-home">
             <search-outlined style="font-size: 20px" />
             <span>景点广场</span>
           </a-menu-item>
-          <a-menu-item key="/star">
+          <a-menu-item key="/user-star">
             <star-outlined style="font-size: 20px" />
             <span>我的景点</span>
           </a-menu-item>
-          <a-menu-item key="/history">
+          <a-menu-item key="/user-plan">
             <container-outlined style="font-size: 20px" />
             <span>我的计划</span>
           </a-menu-item>
-          <a-menu-item key="/chat">
-            <history-outlined style="font-size: 20px" />
-            <span>聊天历史</span>
-          </a-menu-item>
         </a-menu>
+
+        <!-- 用户头像和下拉菜单 -->
+        <user-menu
+          :collapsed="collapsed"
+          @menu-click="handleUserMenuClick"
+        />
       </a-layout-sider>
       <a-layout>
         <a-layout-content :style="{ marginLeft: collapsed ? '80px' : '160px' }">
@@ -65,6 +68,7 @@ import {
 } from "@ant-design/icons-vue";
 import { ref, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
+import UserMenu from '@/components/UserMenu.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -82,6 +86,14 @@ watch(
 
 const handleMenuSelect = ({ key }: { key: string }) => {
   router.push(key);
+};
+
+const handleUserMenuClick = (key: string) => {
+  console.log('User menu clicked:', key);
+  // TODO: 处理用户菜单点击事件
+  if (key === 'signout') {
+    // 处理登出逻辑
+  }
 };
 </script>
 
@@ -112,6 +124,10 @@ const handleMenuSelect = ({ key }: { key: string }) => {
   width: 40px;
   height: 40px;
   margin-right: 15px;
+}
+
+.main-menu {
+  flex: 1;
 }
 
 :deep(.ant-layout-footer) {

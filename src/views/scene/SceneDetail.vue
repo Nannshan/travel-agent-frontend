@@ -20,13 +20,6 @@
         <div class="info-list">
           <div class="info-item">
             <div class="info-label">
-              <clock-circle-outlined />
-              <span>开放时间：</span>
-            </div>
-            <div class="info-content">{{ sceneData.time }}</div>
-          </div>
-          <div class="info-item">
-            <div class="info-label">
               <environment-outlined />
               <span>地址：</span>
             </div>
@@ -76,6 +69,7 @@
     </div>
 
     <div class="content-wrapper">
+
       <!-- 标签 -->
       <div class="tags-section">
         <h3>标签</h3>
@@ -84,6 +78,14 @@
             {{ tag }}
           </a-tag>
         </div>
+      </div>
+
+      <!-- 开放时间 -->
+      <div class="open-time-section">
+        <h3>开放时间</h3>
+        <a-typography-paragraph>
+          {{ sceneData.time }}
+        </a-typography-paragraph>
       </div>
 
       <!-- 景点特色 -->
@@ -108,12 +110,11 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import {
-  ClockCircleOutlined,
   EnvironmentOutlined,
   MoneyCollectOutlined,
   FireOutlined,
 } from "@ant-design/icons-vue";
-import { getSceneDetail } from "../../api/scene.js";
+import { getSceneDetail } from "@/api/scene.js";
 
 const sceneData = ref({
   id: 1,
@@ -204,7 +205,7 @@ const onChange = (current) => {
 .carousel {
   border-radius: 8px;
   background: rgba(241, 240, 240, 0.96);
-  height: 380px;
+  height: 390px;
   width: 100%;
 }
 
@@ -214,7 +215,7 @@ const onChange = (current) => {
   display: block;
   margin: auto;
   max-width: 100%;
-  height: 380px;
+  height: 390px;
   object-fit: contain;
 }
 
@@ -223,8 +224,8 @@ const onChange = (current) => {
   position: absolute !important;
   right: -100px !important;
   top: 0 !important;
-  width: 80px !important;
-  height: 380px !important;
+  width: 90px !important;
+  height: 390px !important;
   display: flex !important;
   flex-direction: column !important;
   justify-content: flex-start;
@@ -269,7 +270,7 @@ const onChange = (current) => {
 .basic-info {
   width: 400px;
   min-width: 450px;
-  height: 380px;
+  height: 390px;
   padding: 40px;
   background: rgb(251, 253, 255);
   border-radius: 16px;

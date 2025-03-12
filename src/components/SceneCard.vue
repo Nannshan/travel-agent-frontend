@@ -62,7 +62,7 @@ const props = defineProps({
 });
 
 const handleCardClick = () => {
-  router.push(`/scene/${props.scene.id}`);
+  router.push(`/scene-detail/${props.scene.id}`);
 };
 </script>
 

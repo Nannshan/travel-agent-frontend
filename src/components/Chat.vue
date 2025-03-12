@@ -1,0 +1,207 @@
+<template>
+  <div class="chat-section">
+    <div class="chat-messages">
+      <div
+        v-for="message in messages"
+        :key="message.id"
+        :class="['message', message.type]"
+      >
+        <div class="avatar">
+          <template v-if="message.type === 'agent'">
+            <img :src="agentAvatar" alt="AI Avatar" />
+          </template>
+          <template v-else>
+            <a-avatar :size="40">{{ userInitial }}</a-avatar>
+          </template>
+        </div>
+        <div class="content">
+          {{ message.content }}
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-input">
+      <input
+        v-model="userInput"
+        type="text"
+        placeholder="输入消息..."
+        @keyup.enter="handleSendMessage"
+      />
+      <button @click="handleSendMessage">发送</button>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, computed } from "vue";
+import { Avatar as AAvatar } from 'ant-design-vue';
+import agentAvatar from '@/assets/agent-avatar.svg';
+import {createThread, sendMessageInvoke, sendMessageStream} from "@/api/agent.js";
+
+// 用户名和头像初始化逻辑
+const username = ref('@mkl63285');
+const userInitial = computed(() => username.value.charAt(1).toUpperCase());
+
+// 聊天消息数据
+const messages = ref([
+  {
+    id: 1,
+    type: "agent",
+    content:
+      "想去哪玩呢？告诉我您的出发城市、出发日期、旅行天数和偏好，我来帮您规划行程。",
+  },
+  {
+    id : 2,
+    type: "user",
+    content: "北京"
+  }
+]);
+
+const userInput = ref("");
+const assistantId = ref("fe096781-5601-53d2-b2f6-0d3403f7e9ca")
+const threadId = ref("");
+
+// 发送消息
+const handleSendMessage = async () => {
+  if (!userInput.value.trim()) return;
+
+  // 添加用户消息
+  messages.value.push({
+    id: messages.value.length + 1,
+    type: "user",
+    content: userInput.value,
+  });
+
+  // 清空输入
+  userInput.value = "";
+
+  try {
+    // 如果没有thread_id，先创建一个新的对话线程
+    if (!threadId.value) {
+      const threadResponse = await createThread();
+      if (threadResponse && threadResponse.thread_id) {
+        threadId.value = threadResponse.thread_id;
+        console.log("创建新对话线程ID:", threadId.value);
+      }
+    }
+
+    // 发送消息到后端
+    const messageInput = {
+      city: "北京",
+      start_date: "2025-03-13",
+      days: 1,
+      preferences: ["文化"]
+    };
+    messages.value.push({
+      id: messages.value.length + 1,
+      type: "agent",
+      content: "正在为您规划行程，请稍等..."
+    })
+    await sendMessageStream(threadId.value, assistantId.value, messageInput, pushAIMessage)
+
+
+
+  } catch (error) {
+    console.error("发送消息失败:", error);
+
+  }
+};
+
+function pushAIMessage(data){
+  // 添加AI响应到消息列表
+  if (data) {
+     messages.value[messages.value.length - 1].content=data;
+  }
+}
+
+// 组件挂载时初始化
+onMounted(async () => {
+
+  try {
+    const response = await createThread();
+    if (response && response.thread_id) {
+      threadId.value = response.thread_id;
+      console.log("初始化对话线程ID:", threadId.value);
+    }
+  } catch (error) {
+    console.error("初始化对话线程失败:", error);
+  }
+});
+</script>
+
+<style scoped>
+.chat-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #e0e0e0;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.message {
+  display: flex;
+  margin-bottom: 20px;
+  gap: 12px;
+}
+
+.message .avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.message .avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.message .content {
+  background: #f5f5f5;
+  padding: 12px;
+  border-radius: 8px;
+  max-width: 70%;
+}
+
+.message.user {
+  flex-direction: row-reverse;
+}
+
+.message.user .content {
+  background: #007aff;
+  color: white;
+}
+
+.chat-input {
+  padding: 20px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  gap: 10px;
+}
+
+.chat-input input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+.chat-input button {
+  padding: 10px 20px;
+  background: #007aff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+</style>

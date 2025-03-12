@@ -4,7 +4,7 @@
       <template #extra>
         <a-button
           type="text"
-          @click="$router.push('/scene')"
+          @click="$router.push('/scene-home')"
           class="browse-btn"
         >
           <template #icon>
@@ -30,7 +30,7 @@
           </template>
           <a-button
             type="text"
-            @click="$router.push('/scene')"
+            @click="$router.push('/scene-home')"
             class="browse-btn"
           >
             立即浏览
@@ -70,10 +70,10 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-import { getStars, removeStar } from "../../api/user.js";
+import { getStars, removeStar } from "@/api/user.js";
 import { SearchOutlined, DeleteOutlined } from "@ant-design/icons-vue";
 import { message } from "ant-design-vue";
-import SceneCard from "../scene/SceneCard.vue";
+import SceneCard from "@/components/SceneCard.vue";
 
 const stars = ref([]);
 const loading = ref(true);
