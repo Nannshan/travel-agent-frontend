@@ -1,8 +1,8 @@
 import myAxios from "../util/request.js";
 
 //获取计划列表
-export function getPlanList() {
-    return myAxios.get(`/api/Agent/planList`);
+export function getPlanList(userid) {
+    return myAxios.get(`/api/Agent/planList/${userid}`);
 }
 
 //获取计划详情
@@ -11,8 +11,8 @@ export function getPlanDetail(id) {
 }
 
 // 添加计划
-export function addPlan(data) {
-    return myAxios.post(`/api/Agent/planList`, data);
+export function addPlan(userid, data) {
+    return myAxios.post(`/api/Agent/planList/${userid}`, data);
 }
 
 // 删除计划

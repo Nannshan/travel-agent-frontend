@@ -1,5 +1,6 @@
 import {createRouter, createWebHashHistory, createWebHistory} from "vue-router";
 import BasicLayout from "@/layouts/BasicLayout.vue";
+import { useUserStore } from '@/stores/user';
 
 const routes = [
   {
@@ -41,6 +42,7 @@ const routes = [
         name: "UserPlan",
         component: () => import("@/views/user/UserPlan.vue"),
       },
+
       //   景点相关
       {
         path: "/scene-home",
@@ -59,6 +61,13 @@ const routes = [
         path: "/agent",
         name: "Agent",
         component: () => import("@/views/agent/Agent.vue"),
+        props: true,
+      },
+      {
+        path: "/agent/chat/:id",
+        name: "AgentChat",
+        component: () => import("@/views/agent/Agent.vue"),
+        props: true,
       },
     ]
   },
@@ -73,6 +82,20 @@ const routes = [
 const router = createRouter({
   history: createWebHashHistory(),
   routes,
+});
+
+// 添加全局前置守卫
+router.beforeEach(async (to, from, next) => {
+  const userStore = useUserStore();
+  const publicPages = ['/login', '/home', '/'];
+  const authRequired = !publicPages.includes(to.path);
+
+  if (authRequired && !userStore.isLoggedIn) {
+    // 如果需要登录但用户未登录，重定向到登录页
+    next('/login');
+  } else {
+    next();
+  }
 });
 
 export default router;

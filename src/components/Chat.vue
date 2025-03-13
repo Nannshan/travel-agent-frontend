@@ -33,22 +33,42 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { Avatar as AAvatar } from 'ant-design-vue';
 import agentAvatar from '@/assets/agent-avatar.svg';
 import {createThread, sendMessageInvoke, sendMessageStream} from "@/api/agent.js";
+import { useUserStore } from '@/stores/user';
+import {addChat, updateChat, getChatDetail} from "@/api/chat.js";
 
-// 用户名和头像初始化逻辑
-const username = ref('@mkl63285');
-const userInitial = computed(() => username.value.charAt(1).toUpperCase());
+const props = defineProps({
+  chatId: {
+    type: String,
+    default: ''
+  },
+  reset: {
+    type: Boolean,
+    default: false
+  }
+});
+
+const emit = defineEmits(['new-chat']);
+
+const userStore = useUserStore();
+
+// 计算用户头像显示
+const userInitial = computed(() => {
+  if (userStore.userInfo && userStore.userInfo.name) {
+    return userStore.userInfo.name.charAt(0).toUpperCase();
+  }
+  return 'U';
+});
 
 // 聊天消息数据
 const messages = ref([
   {
     id: 1,
     type: "agent",
-    content:
-      "想去哪玩呢？告诉我您的出发城市、出发日期、旅行天数和偏好，我来帮您规划行程。",
+    content: "想去哪玩呢？告诉我您的出发城市、出发日期、旅行天数和偏好，我来帮您规划行程。",
   }
 ]);
 
@@ -56,77 +76,133 @@ const userInput = ref("");
 const assistantId = ref("fe096781-5601-53d2-b2f6-0d3403f7e9ca")
 const threadId = ref("");
 
+// 加载聊天记录
+const loadChatHistory = async (id) => {
+  if (!id) return;
+  
+  try {
+    const response = await getChatDetail(id);
+    if (response && response.data) {
+      const chatData = response.data;
+      messages.value = JSON.parse(chatData.messages);
+      threadId.value = chatData.threadid;
+    }
+  } catch (error) {
+    console.error('加载聊天记录失败:', error);
+  }
+};
+
+// 创建新聊天
+const createNewChat = async () => {
+  try {
+    // 1. 创建OpenAI对话线程
+    const threadResponse = await createThread();
+    if (!threadResponse || !threadResponse.thread_id) {
+      throw new Error('创建对话线程失败');
+    }
+
+    // 2. 创建聊天记录
+    const chatData = {
+      userid: userStore.userInfo.id,
+      messages: JSON.stringify(messages.value),
+      threadid: threadResponse.thread_id
+    };
+    
+    const response = await addChat(userStore.userInfo.id, chatData);
+    if (response && response.data && response.data.id) {
+      threadId.value = threadResponse.thread_id;
+      const newChatId = response.data.id.toString();
+      emit('new-chat', newChatId);
+      return true;
+    } else {
+      throw new Error('创建聊天记录失败');
+    }
+  } catch (error) {
+    console.error('创建新聊天失败:', error);
+    throw error;
+  }
+};
+
+// 监听chatId变化
+watch(() => props.chatId, async (newId) => {
+  if (newId) {
+    await loadChatHistory(newId);
+  } else {
+    messages.value = [{
+      id: 1,
+      type: "agent",
+      content: "想去哪玩呢？告诉我您的出发城市、出发日期、旅行天数和偏好，我来帮您规划行程。",
+    }];
+    threadId.value = "";
+  }
+}, { immediate: true });
+
 // 发送消息
 const handleSendMessage = async () => {
   if (!userInput.value.trim()) return;
 
-  // 添加用户消息
-  messages.value.push({
-    id: messages.value.length + 1,
-    type: "user",
-    content: userInput.value,
-  });
-
-  // 清空输入
-  userInput.value = "";
+  const messageContent = userInput.value;
+  userInput.value = ""; // 立即清空输入框
 
   try {
-    // 如果没有thread_id，先创建一个新的对话线程
-    if (!threadId.value) {
-      const threadResponse = await createThread();
-      if (threadResponse && threadResponse.thread_id) {
-        threadId.value = threadResponse.thread_id;
-        console.log("创建新对话线程ID:", threadId.value);
-      }
+    // 添加用户消息
+    messages.value.push({
+      id: messages.value.length + 1,
+      type: "user",
+      content: messageContent,
+    });
+
+    // 如果没有thread_id，需要先创建新聊天
+    if (!threadId.value || props.reset) {
+      await createNewChat();
     }
 
-    // 发送消息到后端
+    // 发送消息到AI
     const messageInput = {
       city: "北京",
-      start_date: "2025-03-13",
+      start_date: "2025-03-15",
       days: 1,
       preferences: ["文化"]
     };
+
     messages.value.push({
       id: messages.value.length + 1,
       type: "agent",
       content: "正在为您规划行程，请稍等..."
-    })
+    });
 
     // 异步处理流式消息
-    // await sendMessageStream(threadId.value, assistantId.value, messageInput, pushAIMessage)
+    await sendMessageStream(threadId.value, assistantId.value, messageInput, pushAIMessage);
 
-    // 异步处理非流式消息
-    const response = await sendMessageInvoke(threadId.value, assistantId.value, messageInput)
-    pushAIMessage(response)
+    // 更新数据库中的消息记录
+    if (props.chatId) {
+      const chatData = {
+        messages: JSON.stringify(messages.value)
+      };
 
+      try {
+        await updateChat(props.chatId, chatData);
+      } catch (error) {
+        console.error('更新聊天记录失败:', error);
+      }
+    }
 
   } catch (error) {
     console.error("发送消息失败:", error);
-
+    // 发生错误时，回滚消息状态
+    messages.value.pop(); // 移除AI的响应
+    messages.value.pop(); // 移除用户的消息
+    userInput.value = messageContent; // 恢复用户输入
   }
 };
 
+// 更新AI消息
 function pushAIMessage(data){
   // 添加AI响应到消息列表
   if (data) {
-     messages.value[messages.value.length - 1].content=data;
+    messages.value[messages.value.length-1].content = data;
   }
 }
-
-// 组件挂载时初始化
-onMounted(async () => {
-
-  try {
-    const response = await createThread();
-    if (response && response.thread_id) {
-      threadId.value = response.thread_id;
-      console.log("初始化对话线程ID:", threadId.value);
-    }
-  } catch (error) {
-    console.error("初始化对话线程失败:", error);
-  }
-});
 </script>
 
 <style scoped>
