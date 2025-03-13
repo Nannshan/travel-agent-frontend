@@ -25,11 +25,12 @@ export const getThread = async (threadId) => {
 // 非流式消息
 export const sendMessageInvoke = async (threadId, assistantId, input) => {
   try {
-    const response = await myAxios.post(`/agent/threads/${threadId}/runs`, {
+    const response = await myAxios.post(`/agent/threads/${threadId}/runs/wait`, {
       assistant_id: assistantId,
       input: input,
+      stream_mode: ["values"],
     });
-    return response.data;
+    return response.data.daily_recommendations;
   } catch (error) {
     console.error('发送消息失败:', error.message);
     throw error;

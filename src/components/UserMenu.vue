@@ -30,19 +30,23 @@
   </div>
 </template>
 
-<script lang="ts" setup>
+<script setup>
 import { SettingOutlined, BarChartOutlined, LogoutOutlined } from '@ant-design/icons-vue';
-import { username, userInitial } from '@/config/user';
+import { useUserStore } from '@/stores/user.js';
+import { computed } from 'vue';
 
-const props = defineProps<{
-  collapsed: boolean;
-}>();
+const userStore = useUserStore();
 
-const emit = defineEmits<{
-  (e: 'menuClick', key: string): void;
-}>();
+const username = computed(() => userStore.name || 'momo');
+const userInitial = computed(() => username.value.charAt(0).toUpperCase());
 
-const handleMenuClick = ({ key }: { key: string }) => {
+
+const emit = defineEmits(['menuClick']);
+
+const handleMenuClick = ({ key }) => {
+  if (key === 'signout') {
+    userStore.userlogout();
+  }
   emit('menuClick', key);
 };
 </script>
@@ -53,7 +57,7 @@ const handleMenuClick = ({ key }: { key: string }) => {
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 8px;
+  padding: 14px;
   border-top: 1px solid #f0f0f0;
   background: white;
 }
@@ -74,25 +78,28 @@ const handleMenuClick = ({ key }: { key: string }) => {
 }
 
 .dropdown-header {
-  padding: 20px;
+  padding: 24px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
+  text-align: center;
+  gap: 8px;
 }
 
 .dropdown-username {
   font-size: 16px;
   font-weight: 500;
   color: #333;
+  margin-top: 4px;
 }
 
 :deep(.ant-dropdown-menu) {
-  min-width: 240px;
+  min-width: 280px;
   padding: 12px 0;
 }
 
 :deep(.ant-dropdown-menu-item) {
-  padding: 12px 24px;
+  padding: 12px 32px;
   font-size: 14px;
   height: 48px;
   line-height: 24px;

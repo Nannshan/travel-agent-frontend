@@ -4,8 +4,19 @@
       <!-- 基本信息 -->
       <div class="basic-info">
         <div class="header-section">
+          <a-button
+            :type="isStarred ? 'primary' : 'default'"
+            shape="circle"
+            class="star-btn"
+            @click="handleStarClick"
+            :loading="starLoading"
+          >
+            <template #icon><star-outlined /></template>
+          </a-button>
           <div class="title-section">
-            <h1>{{ sceneData.name }}</h1>
+            <div class="title-wrapper">
+              <h1>{{ sceneData.name }}</h1>
+            </div>
             <div class="score-section">
               <a-rate :value="Number(sceneData.score)" disabled allow-half />
               <span class="score">{{ sceneData.score }}分</span>
@@ -113,8 +124,16 @@ import {
   EnvironmentOutlined,
   MoneyCollectOutlined,
   FireOutlined,
+  StarOutlined,
 } from "@ant-design/icons-vue";
 import { getSceneDetail } from "@/api/scene.js";
+import { addStar, removeStar, getStars } from "@/api/user.js";
+import { message } from "ant-design-vue";
+import { useUserStore } from "@/stores/user";
+
+const userStore = useUserStore();
+const isStarred = ref(false);
+const starLoading = ref(false);
 
 const sceneData = ref({
   id: 1,
@@ -141,6 +160,42 @@ const props = defineProps({
     required: true,
   },
 });
+
+const checkIfStarred = async () => {
+  try {
+    if (!userStore.isLoggedIn) return;
+    const res = await getStars(userStore.userId);
+    const starList = res.data || [];
+    isStarred.value = starList.some(item => item.id === Number(props.id));
+  } catch (error) {
+    console.error("检查收藏状态失败:", error);
+  }
+};
+
+const handleStarClick = async () => {
+  if (!userStore.isLoggedIn) {
+    message.warning("请先登录后再收藏");
+    return;
+  }
+
+  try {
+    starLoading.value = true;
+    if (isStarred.value) {
+      await removeStar(userStore.userId, props.id);
+      message.success("取消收藏成功");
+      isStarred.value = false;
+    } else {
+      await addStar({ userId: userStore.userId, sceneId: props.id });
+      message.success("收藏成功");
+      isStarred.value = true;
+    }
+  } catch (error) {
+    message.error("操作失败，请稍后重试");
+    console.error("收藏操作失败:", error);
+  } finally {
+    starLoading.value = false;
+  }
+};
 
 onMounted(async () => {
   try {
@@ -172,6 +227,9 @@ onMounted(async () => {
         console.error("解析特色列表失败:", e);
       }
     }
+
+    // 检查是否已收藏
+    await checkIfStarred();
   } catch (error) {
     console.error("获取景点详情失败:", error);
   }
@@ -277,6 +335,11 @@ const onChange = (current) => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
+.header-section {
+  position: relative;
+  padding-right: 50px; /* 为收藏按钮留出空间 */
+}
+
 .title-section {
   margin-bottom: 16px;
 }
@@ -349,5 +412,19 @@ h3 {
   font-size: 20px;
   margin-bottom: 16px;
   color: #1890ff;
+}
+
+.title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* 添加收藏按钮样式 */
+.star-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin-top: 0;
 }
 </style>

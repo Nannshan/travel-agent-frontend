@@ -49,11 +49,6 @@ const messages = ref([
     type: "agent",
     content:
       "想去哪玩呢？告诉我您的出发城市、出发日期、旅行天数和偏好，我来帮您规划行程。",
-  },
-  {
-    id : 2,
-    type: "user",
-    content: "北京"
   }
 ]);
 
@@ -97,8 +92,13 @@ const handleSendMessage = async () => {
       type: "agent",
       content: "正在为您规划行程，请稍等..."
     })
-    await sendMessageStream(threadId.value, assistantId.value, messageInput, pushAIMessage)
 
+    // 异步处理流式消息
+    // await sendMessageStream(threadId.value, assistantId.value, messageInput, pushAIMessage)
+
+    // 异步处理非流式消息
+    const response = await sendMessageInvoke(threadId.value, assistantId.value, messageInput)
+    pushAIMessage(response)
 
 
   } catch (error) {

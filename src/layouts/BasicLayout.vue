@@ -58,7 +58,7 @@
   </div>
 </template>
 
-<script lang="ts" setup>
+<script setup>
 import {
   SearchOutlined,
   CommentOutlined,
@@ -68,13 +68,13 @@ import {
 } from "@ant-design/icons-vue";
 import { ref, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import UserMenu from '@/components/UserMenu.vue';
+import UserMenu from '../components/UserMenu.vue';
 
 const router = useRouter();
 const route = useRoute();
 
-const collapsed = ref<boolean>(true);
-const selectedKeys = ref<string[]>([route.path]);
+const collapsed = ref(true);
+const selectedKeys = ref([route.path]);
 
 // 监听路由变化更新选中菜单项
 watch(
@@ -84,17 +84,10 @@ watch(
   },
 );
 
-const handleMenuSelect = ({ key }: { key: string }) => {
+const handleMenuSelect = ({ key }) => {
   router.push(key);
 };
 
-const handleUserMenuClick = (key: string) => {
-  console.log('User menu clicked:', key);
-  // TODO: 处理用户菜单点击事件
-  if (key === 'signout') {
-    // 处理登出逻辑
-  }
-};
 </script>
 
 <style scoped>
