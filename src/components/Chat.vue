@@ -152,6 +152,12 @@ const handleSendMessage = async () => {
       content: messageContent,
     });
 
+    messages.value.push({
+      id: messages.value.length + 1,
+      type: "agent",
+      content: "正在为您规划行程，请稍等..."
+    });
+
     // 如果没有thread_id，需要先创建新聊天
     if (!threadId.value || props.reset) {
       await createNewChat();
@@ -164,12 +170,6 @@ const handleSendMessage = async () => {
       days: 1,
       preferences: ["文化"]
     };
-
-    messages.value.push({
-      id: messages.value.length + 1,
-      type: "agent",
-      content: "正在为您规划行程，请稍等..."
-    });
 
     // 异步处理流式消息
     await sendMessageStream(threadId.value, assistantId.value, messageInput, pushAIMessage);

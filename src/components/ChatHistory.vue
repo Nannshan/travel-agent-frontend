@@ -93,7 +93,8 @@ const onClose = () => {
   emit('update:visible', false);
 };
 
-const selectChat = (chat) => {
+const selectChat = async (chat) => {
+  await fetchChatHistory();
   emit('select', chat);
   onClose();
 };
