@@ -36,7 +36,7 @@
 import { ref, computed, watch } from "vue";
 import { Avatar as AAvatar } from 'ant-design-vue';
 import agentAvatar from '@/assets/agent-avatar.svg';
-import {createThread, sendMessageInvoke, sendMessageStream} from "@/api/agent.js";
+import {createThread, sendInitialMessageStream, sendMessageInvoke, sendUserMessageStream} from "@/api/agent.js";
 import { useUserStore } from '@/stores/user';
 import {addChat, updateChat, getChatDetail} from "@/api/chat.js";
 
@@ -71,6 +71,21 @@ const messages = ref([
     content: "想去哪玩呢？告诉我您的出发城市、出发日期、旅行天数和偏好，我来帮您规划行程。",
   }
 ]);
+
+// 滚动到底部
+const scrollToBottom = () => {
+  const chatMessages = document.querySelector('.chat-messages');
+  if (chatMessages) {
+    setTimeout(() => {
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }, 100);
+  }
+};
+
+// 监听消息变化
+watch(() => messages.value, () => {
+  scrollToBottom();
+}, { deep: true });
 
 const userInput = ref("");
 const assistantId = ref("fe096781-5601-53d2-b2f6-0d3403f7e9ca")
@@ -155,24 +170,19 @@ const handleSendMessage = async () => {
     messages.value.push({
       id: messages.value.length + 1,
       type: "agent",
-      content: "正在为您规划行程，请稍等..."
+      content: "思考中..."
     });
 
     // 如果没有thread_id，需要先创建新聊天
     if (!threadId.value || props.reset) {
       await createNewChat();
+      // 异步处理初始化流式消息
+      await sendInitialMessageStream(threadId.value, assistantId.value, messageContent, pushAIMessage);
     }
-
-    // 发送消息到AI
-    const messageInput = {
-      city: "北京",
-      start_date: "2025-03-15",
-      days: 1,
-      preferences: ["文化"]
-    };
-
-    // 异步处理流式消息
-    await sendMessageStream(threadId.value, assistantId.value, messageInput, pushAIMessage);
+    else {
+      // 异步处理聊天流式消息
+      await sendUserMessageStream(threadId.value, assistantId.value, messageContent, pushAIMessage);
+    }
 
     // 更新数据库中的消息记录
     if (props.chatId) {
@@ -199,8 +209,9 @@ const handleSendMessage = async () => {
 // 更新AI消息
 function pushAIMessage(data){
   // 添加AI响应到消息列表
-  if (data) {
+  if (data && messages.value[messages.value.length-1].type === "agent") {
     messages.value[messages.value.length-1].content = data;
+    scrollToBottom();
   }
 }
 </script>
@@ -211,12 +222,22 @@ function pushAIMessage(data){
   display: flex;
   flex-direction: column;
   border-right: 1px solid #e0e0e0;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
 }
 
 .chat-messages {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 20px;
+  scroll-behavior: smooth;
+  position: absolute;
+  top: 0;
+  bottom: 80px; /* 留出输入框的高度 */
+  left: 0;
+  right: 0;
 }
 
 .message {
@@ -263,6 +284,13 @@ function pushAIMessage(data){
   border-top: 1px solid #e0e0e0;
   display: flex;
   gap: 10px;
+  align-items: center;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  height: 80px;
 }
 
 .chat-input input {
@@ -279,5 +307,9 @@ function pushAIMessage(data){
   border: none;
   border-radius: 4px;
   cursor: pointer;
+}
+
+.chat-input button:hover {
+  background: #0056b3;
 }
 </style>

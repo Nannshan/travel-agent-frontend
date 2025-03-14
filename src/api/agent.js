@@ -22,6 +22,7 @@ export const getThread = async (threadId) => {
   }
 };
 
+
 // 非流式消息
 export const sendMessageInvoke = async (threadId, assistantId, input) => {
   try {
@@ -30,44 +31,69 @@ export const sendMessageInvoke = async (threadId, assistantId, input) => {
       input: input,
       stream_mode: ["values"],
     });
-    return response.data.daily_recommendations;
+    return response.data.plans;
   } catch (error) {
     console.error('发送消息失败:', error.message);
     throw error;
   }
 };
 
-// 流式消息
-export const sendMessageStream = async (threadId, assistantId, input, onMessage) => {
-  let str ='';
+// 处理流式数据的进度
+const handleStreamProgress = (progressEvent, onMessage) => {
+  const chunks = progressEvent.event.target.response.split('\n');
+  chunks.forEach(chunk => {
+    if (chunk.trim()) {
+      try {
+        let data = null;
+        if(chunk.startsWith("data:")){
+          data = chunk.substring("data: ".length);
+        }
+        data = JSON.parse(data);
+        if(data[0]?.content){
+          const str = data[0].content;
+          console.log(str);
+          onMessage(str);
+        }
+      } catch (e) {
+        console.warn('解析流数据失败:', e);
+      }
+    }
+  });
+};
+
+// 流式初始化消息
+export const sendInitialMessageStream = async (threadId, assistantId, input, onMessage) => {
+  try {
+    const response = await myAxios.post(
+      `/agent/threads/${threadId}/runs/stream`,
+      {
+        assistant_id: assistantId,
+        input: {"initial_input": input},
+        stream_mode: ["messages"],
+      },
+      {
+        responseType: "stream",
+        onDownloadProgress: (progressEvent) =>
+          handleStreamProgress(progressEvent, onMessage),
+      },
+    );
+    return response.data;
+  } catch (error) {
+    console.error('发送消息失败:', error.message);
+    throw error;
+  }
+};
+
+// 用户聊天
+export const sendUserMessageStream = async (threadId, assistantId, resume, onMessage) => {
   try {
     const response = await myAxios.post(`/agent/threads/${threadId}/runs/stream`, {
       assistant_id: assistantId,
-      input: input,
+      command: {resume: resume},
       stream_mode: ["messages"],
     }, {
       responseType: 'stream',
-      onDownloadProgress: (progressEvent) => {
-        const chunks = progressEvent.event.target.response.split('\n');
-        chunks.forEach(chunk => {
-          if (chunk.trim()) {
-            try {
-              let data = null;
-              if(chunk.startsWith("data:")){
-                data = chunk.substring("data: ".length);
-              }
-              data = JSON.parse(data);
-              if(data[0]?.content){
-                str = data[0].content;
-                console.log(str);
-                onMessage(str)
-              }
-            } catch (e) {
-              console.warn('解析流数据失败:', e);
-            }
-          }
-        });
-      }
+      onDownloadProgress: (progressEvent) => handleStreamProgress(progressEvent, onMessage)
     });
     return response.data;
   } catch (error) {

@@ -91,6 +91,7 @@ router.beforeEach(async (to, from, next) => {
   const authRequired = !publicPages.includes(to.path);
 
   if (authRequired && !userStore.isLoggedIn) {
+    console.log(userStore.isLoggedIn);
     // 如果需要登录但用户未登录，重定向到登录页
     next('/login');
   } else {

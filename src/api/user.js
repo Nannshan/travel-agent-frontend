@@ -10,11 +10,6 @@ export function login(data) {
     return myAxios.post("/api/UserManagement/login", data);
 }
 
-//退出登录
-export function logout(data) {
-    return myAxios.post("/api/UserManagement/logout", data);
-}
-
 //获取用户信息
 export function getUserInfo(Id) {
     return myAxios.get(`/api/UserManagement/userDetail/${Id}`);

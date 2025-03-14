@@ -1,11 +1,11 @@
 import { defineStore } from 'pinia';
 import router from '@/router';
 import { message } from 'ant-design-vue';
-import { login, logout, getUserInfo, updateUserInfo as apiUpdateUserInfo } from '@/api/user';
+import { login, getUserInfo, updateUserInfo as apiUpdateUserInfo } from '@/api/user';
 
 export const useUserStore = defineStore('user', {
   state: () => ({
-    id: null,
+        id: null,
     email: null,
     name: null,
     age: null,
@@ -121,6 +121,7 @@ export const useUserStore = defineStore('user', {
     async initializeFromStorage() {
       try {
         const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+        this.setUserInfo(userInfo);
         if (userInfo && userInfo.id) {
           // 从服务器获取最新的用户信息
           const response = await getUserInfo(userInfo.id);
@@ -167,20 +168,6 @@ export const useUserStore = defineStore('user', {
     async userlogout() {
       try {
         this.setLoading(true);
-        // 准备完整的用户数据
-        const userData = {
-          id: this.id,
-          email: this.email,
-          name: this.name,
-          age: this.age,
-          gender: this.gender,
-          phone: this.phone,
-          preference: this.preference,
-          lastLoginTime: this.lastLoginTime
-        };
-        
-        // 发送用户数据到后端
-        await logout(userData);
         this.clearUserInfo();
         message.success('退出登录成功');
         router.push('/login');
