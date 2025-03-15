@@ -33,26 +33,32 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from "vue";
-import { Avatar as AAvatar } from 'ant-design-vue';
-import agentAvatar from '@/assets/agent-avatar.svg';
-import {createThread, sendInitialMessageStream, sendMessageInvoke, sendUserMessageStream} from "@/api/agent.js";
-import { useUserStore } from '@/stores/user';
-import {addChat, updateChat, getChatDetail} from "@/api/chat.js";
+import { computed, ref, watch } from "vue";
+import { Avatar as AAvatar } from "ant-design-vue";
+import agentAvatar from "@/assets/agent-avatar.svg";
+import {
+  createThread,
+  sendInitialMessageStream,
+  sendMessageInvoke,
+  sendUserMessageStream,
+} from "@/api/agent.js";
+import { useUserStore } from "@/stores/user";
+import { addChat, getChatDetail, updateChat } from "@/api/chat.js";
+import {addPlan, getByTwo, updatePlan} from "@/api/plan.js";
 
 const props = defineProps({
   chatId: {
     type: String,
-    default: ''
+    default: "",
   },
   reset: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 });
 
-const emit = defineEmits(['new-chat']);
-
+const emit = defineEmits(["new-chat", "ready-generate"]);
+const ready_to_generate = ref(false);
 const userStore = useUserStore();
 
 // 计算用户头像显示
@@ -60,7 +66,7 @@ const userInitial = computed(() => {
   if (userStore.userInfo && userStore.userInfo.name) {
     return userStore.userInfo.name.charAt(0).toUpperCase();
   }
-  return 'U';
+  return "U";
 });
 
 // 聊天消息数据
@@ -68,13 +74,14 @@ const messages = ref([
   {
     id: 1,
     type: "agent",
-    content: "想去哪玩呢？告诉我您的出发城市、出发日期、旅行天数和偏好，我来帮您规划行程。",
-  }
+    content:
+      "想去哪玩呢？告诉我您的出发城市、出发日期、旅行天数和偏好，我来帮您规划行程。",
+  },
 ]);
 
 // 滚动到底部
 const scrollToBottom = () => {
-  const chatMessages = document.querySelector('.chat-messages');
+  const chatMessages = document.querySelector(".chat-messages");
   if (chatMessages) {
     setTimeout(() => {
       chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -83,18 +90,22 @@ const scrollToBottom = () => {
 };
 
 // 监听消息变化
-watch(() => messages.value, () => {
-  scrollToBottom();
-}, { deep: true });
+watch(
+  () => messages.value,
+  () => {
+    scrollToBottom();
+  },
+  { deep: true },
+);
 
 const userInput = ref("");
-const assistantId = ref("fe096781-5601-53d2-b2f6-0d3403f7e9ca")
+const assistantId = ref("fe096781-5601-53d2-b2f6-0d3403f7e9ca");
 const threadId = ref("");
 
 // 加载聊天记录
 const loadChatHistory = async (id) => {
   if (!id) return;
-  
+
   try {
     const response = await getChatDetail(id);
     if (response && response.data) {
@@ -103,7 +114,7 @@ const loadChatHistory = async (id) => {
       threadId.value = chatData.threadid;
     }
   } catch (error) {
-    console.error('加载聊天记录失败:', error);
+    console.error("加载聊天记录失败:", error);
   }
 };
 
@@ -113,44 +124,84 @@ const createNewChat = async () => {
     // 1. 创建OpenAI对话线程
     const threadResponse = await createThread();
     if (!threadResponse || !threadResponse.thread_id) {
-      throw new Error('创建对话线程失败');
+      throw new Error("创建对话线程失败");
     }
 
     // 2. 创建聊天记录
     const chatData = {
       userid: userStore.userInfo.id,
       messages: JSON.stringify(messages.value),
-      threadid: threadResponse.thread_id
+      threadid: threadResponse.thread_id,
     };
-    
+
     const response = await addChat(userStore.userInfo.id, chatData);
     if (response && response.data && response.data.id) {
       threadId.value = threadResponse.thread_id;
       const newChatId = response.data.id.toString();
-      emit('new-chat', newChatId);
+      emit("new-chat", newChatId);
       return true;
     } else {
-      throw new Error('创建聊天记录失败');
+      throw new Error("创建聊天记录失败");
     }
   } catch (error) {
-    console.error('创建新聊天失败:', error);
+    console.error("创建新聊天失败:", error);
     throw error;
   }
 };
 
 // 监听chatId变化
-watch(() => props.chatId, async (newId) => {
-  if (newId) {
-    await loadChatHistory(newId);
-  } else {
-    messages.value = [{
-      id: 1,
-      type: "agent",
-      content: "想去哪玩呢？告诉我您的出发城市、出发日期、旅行天数和偏好，我来帮您规划行程。",
-    }];
-    threadId.value = "";
+watch(
+  () => props.chatId,
+  async (newId) => {
+    if (newId) {
+      await loadChatHistory(newId);
+    } else {
+      messages.value = [
+        {
+          id: 1,
+          type: "agent",
+          content:
+            "🌞 嗨～我是你的旅行小助手！准备好开始计划旅程了吗？想去哪玩呢？告诉我您的出发城市、出发日期、旅行天数和旅行偏好，我来帮您规划行程。",
+        },
+      ];
+      threadId.value = "";
+    }
+  },
+  { immediate: true },
+);
+
+// 检查是否为行程生成数据
+const isGenerateData = (data) => {
+  try {
+    const jsonData = typeof data === "string" ? JSON.parse(data) : data;
+    return (
+      jsonData &&
+      typeof jsonData === "object" &&
+      "city" in jsonData &&
+      "preferences" in jsonData &&
+      "start_date" in jsonData &&
+      "days" in jsonData &&
+      Array.isArray(jsonData.preferences)
+    );
+  } catch (e) {
+    return false;
   }
-}, { immediate: true });
+};
+
+// 检查是否为行程计划数据
+const isTravelPlanData = (data) => {
+  try {
+    const jsonData = typeof data === "string" ? JSON.parse(data) : data;
+    return (
+      jsonData &&
+      typeof jsonData === "object" &&
+      "travel_plan" in jsonData &&
+      Array.isArray(jsonData.travel_plan)
+    );
+  } catch (e) {
+    return false;
+  }
+};
 
 // 发送消息
 const handleSendMessage = async () => {
@@ -170,33 +221,56 @@ const handleSendMessage = async () => {
     messages.value.push({
       id: messages.value.length + 1,
       type: "agent",
-      content: "思考中..."
+      content: "思考中...",
     });
 
+    //收集齐信息时不再使用流式消息调用
+    if (ready_to_generate.value) {
+      messages.value[messages.value.length - 1].content =
+        "正在为您生成旅行计划，请稍后...";
+      const res = await sendMessageInvoke(
+        threadId.value,
+        assistantId.value,
+        messageContent,
+      );
+      pushAIMessage(res);
+    }
     // 如果没有thread_id，需要先创建新聊天
-    if (!threadId.value || props.reset) {
+    else if (!threadId.value || props.reset) {
       await createNewChat();
       // 异步处理初始化流式消息
-      await sendInitialMessageStream(threadId.value, assistantId.value, messageContent, pushAIMessage);
-    }
-    else {
+      const input = {
+        initial_input: messageContent,
+        chat_id: threadId.value,
+      };
+      await sendInitialMessageStream(
+        threadId.value,
+        assistantId.value,
+        input,
+        pushAIMessage,
+      );
+    } else {
       // 异步处理聊天流式消息
-      await sendUserMessageStream(threadId.value, assistantId.value, messageContent, pushAIMessage);
+      await sendUserMessageStream(
+        threadId.value,
+        assistantId.value,
+        messageContent,
+        pushAIMessage,
+      );
     }
 
     // 更新数据库中的消息记录
     if (props.chatId) {
       const chatData = {
-        messages: JSON.stringify(messages.value)
+        messages: JSON.stringify(messages.value),
       };
 
       try {
         await updateChat(props.chatId, chatData);
       } catch (error) {
-        console.error('更新聊天记录失败:', error);
+        console.error("更新聊天记录失败:", error);
       }
     }
-
   } catch (error) {
     console.error("发送消息失败:", error);
     // 发生错误时，回滚消息状态
@@ -207,11 +281,61 @@ const handleSendMessage = async () => {
 };
 
 // 更新AI消息
-function pushAIMessage(data){
-  // 添加AI响应到消息列表
-  if (data && messages.value[messages.value.length-1].type === "agent") {
-    messages.value[messages.value.length-1].content = data;
+async function pushAIMessage(data) {
+  if (!data) return;
+
+  // 检查是否为生成行程的数据
+  if (isGenerateData(data)) {
+    ready_to_generate.value = true;
+    messages.value[messages.value.length - 1].content =
+      "正在为您生成旅行计划，请稍后...";
     scrollToBottom();
+    return;
+  }
+
+  if (ready_to_generate.value) {
+    // 检查是否为行程计划数据
+    if (isTravelPlanData(data)) {
+      const planData = {
+        userid: userStore.userInfo.id,
+        chatid: props.chatId,
+        travel_plan: data,
+        threadid: threadId.value,
+      };
+
+      try {
+        //根据是否存在决定更新还是新建
+        try {
+          const existingPlan = await getByTwo(userStore.userInfo.id, props.chatId);
+          // 如果计划存在，则更新
+          const res = await updatePlan(existingPlan.id, planData);
+          emit("ready-generate", res.data.id);
+        } catch (error) {
+          if (error.response && error.response.status === 404) {
+            // 如果计划不存在，则新建
+            const res = await addPlan(userStore.userInfo.id, planData);
+            emit("ready-generate", res.data.id);
+          } else {
+            throw error; // 其他错误则抛出
+          }
+        }
+      } catch (error) {
+        console.error("保存旅行计划失败:", error);
+        messages.value[messages.value.length - 1].content =
+          "保存旅行计划失败，请重试";
+      }
+    }
+  } else {
+    // 检查是否与已有的AI消息重复
+    const isDuplicate = messages.value.some(
+      (msg) => msg.type === "agent" && msg.content === data,
+    );
+
+    // 如果不是重复消息，则更新最后一条AI消息
+    if (!isDuplicate && !data.startsWith("{")) {
+      messages.value[messages.value.length - 1].content = data;
+      scrollToBottom();
+    }
   }
 }
 </script>

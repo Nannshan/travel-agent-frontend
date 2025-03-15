@@ -20,15 +20,18 @@
         </div>
       </div>
       <Chat
+        ref="chatRef"
         :reset="resetChat"
         :chat-id="$route.params.id"
-        @new-chat="handleNewChat" 
+        @new-chat="handleNewChat"
+        @ready-generate="handleReadyGenerate"
       />
     </div>
 
-    <!-- 右侧地图区域 -->
+    <!-- 右侧区域 -->
     <div class="right-section">
-      <Map />
+      <Map v-if="!showTripPlan" />
+      <TripPlan v-else :plan-id="planId" />
     </div>
 
     <!-- 聊天历史抽屉 -->
@@ -42,6 +45,7 @@
 <script setup>
 import Map from '@/components/Map.vue';
 import Chat from '@/components/Chat.vue';
+import TripPlan from '@/components/TripPlan.vue';
 import ChatHistory from '@/components/ChatHistory.vue';
 import { HistoryOutlined, PlusOutlined } from '@ant-design/icons-vue';
 import { ref } from 'vue';
@@ -50,15 +54,18 @@ import { useRouter } from 'vue-router';
 const router = useRouter();
 const showHistory = ref(false);
 const resetChat = ref(false);
+const showTripPlan = ref(false);
+const planId = ref(null);
+const chatRef = ref(null);
 
 // 处理新建聊天按钮点击
 const handleNewChat = async (chatId) => {
   try {
+    showTripPlan.value = false;
+    planId.value = null;
     if (chatId) {
-      // 当Chat组件创建了新聊天时，更新路由到新聊天
       await router.push(`/agent/chat/${chatId}`);
     } else {
-      // 当点击新建聊天按钮时，重置到基础路由
       resetChat.value = true;
       await router.push('/agent');
       resetChat.value = false;
@@ -71,11 +78,18 @@ const handleNewChat = async (chatId) => {
 // 处理选择历史记录
 const handleHistorySelect = async (chat) => {
   if (chat && chat.id) {
+    showTripPlan.value = false;
+    planId.value = null;
     await router.push(`/agent/chat/${chat.id}`);
     showHistory.value = false;
   }
 };
 
+// 处理准备生成行程
+const handleReadyGenerate = (id) => {
+  planId.value = id;
+  showTripPlan.value = true;
+};
 </script>
 
 <style scoped>

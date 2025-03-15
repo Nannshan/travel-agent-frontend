@@ -28,7 +28,7 @@ export const sendMessageInvoke = async (threadId, assistantId, input) => {
   try {
     const response = await myAxios.post(`/agent/threads/${threadId}/runs/wait`, {
       assistant_id: assistantId,
-      input: input,
+      command: {resume: input},
       stream_mode: ["values"],
     });
     return response.data.plans;
@@ -44,15 +44,16 @@ const handleStreamProgress = (progressEvent, onMessage) => {
   chunks.forEach(chunk => {
     if (chunk.trim()) {
       try {
-        let data = null;
         if(chunk.startsWith("data:")){
-          data = chunk.substring("data: ".length);
-        }
-        data = JSON.parse(data);
-        if(data[0]?.content){
-          const str = data[0].content;
-          console.log(str);
-          onMessage(str);
+          const jsonStr = chunk.substring(6);
+          const data = JSON.parse(jsonStr);
+          if (Array.isArray(data) && data[0]?.type === 'ai' && data[0]?.content) {
+            // 只处理非空内容
+            if (data[0].content.trim()) {
+              // console.log('AI消息:', data[0].content);
+              onMessage(data[0].content);
+            }
+          }
         }
       } catch (e) {
         console.warn('解析流数据失败:', e);
@@ -68,7 +69,7 @@ export const sendInitialMessageStream = async (threadId, assistantId, input, onM
       `/agent/threads/${threadId}/runs/stream`,
       {
         assistant_id: assistantId,
-        input: {"initial_input": input},
+        input: input,
         stream_mode: ["messages"],
       },
       {

@@ -10,6 +10,11 @@ export function getPlanDetail(id) {
     return myAxios.get(`/api/Agent/planDetail/${id}`);
 }
 
+//根据userid和chatid获取
+export function getByTwo(userid, chatid) {
+    return myAxios.get(`/api/Agent/planDetail/${userid}/${chatid}`);
+}
+
 // 添加计划
 export function addPlan(userid, data) {
     return myAxios.post(`/api/Agent/planList/${userid}`, data);
@@ -21,6 +26,6 @@ export function deletePlan(id) {
 }
 
 // 更新计划
-export function updateChat(id, data) {
+export function updatePlan(id, data) {
     return myAxios.put(`/api/Agent/planDetail/${id}`, data);
 }
