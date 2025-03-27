@@ -20,6 +20,20 @@ export function updateUserInfo(Id, data) {
     return myAxios.put(`/api/UserManagement/userDetail/${Id}`, data);
 }
 
+// 上传用户头像
+export function uploadUserAvatar(Id, formData) {
+    return myAxios.post(`/api/UserManagement/userDetail/${Id}/avatar`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
+    });
+}
+
+// 获取用户统计信息
+export function getUserStatic(Id){
+    return myAxios.get(`/api/UserManagement/userDetail/${Id}/stats`);
+}
+
 //删除用户
 export function deleteUser(Id) {
     return myAxios.delete(`/api/UserManagement/userDetail/${Id}`);
@@ -37,5 +51,16 @@ export function removeStar(userId, sceneId) {
 
 // 添加景点到收藏
 export function addStar(data) {
-    return myAxios.post(`/api/UserManagement/starList/${id}`);
+    return myAxios.post(`/api/UserManagement/starList/${data.userId}`, {
+        userid: data.userId,
+        sceneid: data.sceneId
+    });
+}
+
+// 发送邮箱验证码
+export function sendEmailCode(email) {
+  return myAxios.post("/api/UserManagement/sendEmailCode", {
+    email: email,
+    type: "login" // 用途：登录验证
+  });
 }

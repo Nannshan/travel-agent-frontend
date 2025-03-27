@@ -27,12 +27,6 @@ const routes = [
     children: [
       //   用户相关
       {
-        path: "/user-profile/:username",
-        name: "UserProfile",
-        component: () => import("@/views/user/UserPlan.vue"),
-        props: true,
-      },
-      {
         path: "/user-star",
         name: "SceneStar",
         component: () => import("@/views/user/SceneStar.vue"),
@@ -42,7 +36,22 @@ const routes = [
         name: "UserPlan",
         component: () => import("@/views/user/UserPlan.vue"),
       },
-
+      {
+        path: '/user-profile',
+        name: 'UserProfile',
+        component: () => import('@/views/user/UserProfile.vue'),
+        meta: {
+          requiresAuth: true
+        }
+      },
+      {
+        path: '/user-statistics',
+        name: 'UserStatistics',
+        component: () => import('@/views/user/UserStatistics.vue'),
+        meta: {
+          requiresAuth: true
+        }
+      },
       //   景点相关
       {
         path: "/scene-home",

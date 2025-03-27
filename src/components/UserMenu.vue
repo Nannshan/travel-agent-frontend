@@ -2,12 +2,20 @@
   <div class="user-profile">
     <a-dropdown placement="topRight" :trigger="['click']">
       <div class="avatar-wrapper">
-        <a-avatar :size="40">{{ userInitial }}</a-avatar>
+        <a-avatar :size="40" :src="userAvatarUrl">
+          <template #icon v-if="!userAvatarUrl">
+            {{ userInitial }}
+          </template>
+        </a-avatar>
       </div>
       <template #overlay>
         <a-menu @click="handleMenuClick">
           <div class="dropdown-header">
-            <a-avatar :size="48">{{ userInitial }}</a-avatar>
+            <a-avatar :size="48" :src="userAvatarUrl">
+              <template #icon v-if="!userAvatarUrl">
+                {{ userInitial }}
+              </template>
+            </a-avatar>
             <span class="dropdown-username">{{ username }}</span>
           </div>
           <a-menu-divider />
@@ -31,11 +39,36 @@
 </template>
 
 <script setup>
-import { SettingOutlined, BarChartOutlined, LogoutOutlined } from '@ant-design/icons-vue';
+import { SettingOutlined, BarChartOutlined, LogoutOutlined, UserOutlined } from '@ant-design/icons-vue';
 import { useUserStore } from '@/stores/user.js';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { getUserStatic } from '@/api/user';
 
 const userStore = useUserStore();
+const router = useRouter();
+
+// 用户统计数据
+const userStats = ref({
+  chat_count: 0,
+  plan_count: 0,
+  star_count: 0,
+  created_at: ''
+});
+
+// 获取API基础URL
+const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+// 计算用户头像URL
+const userAvatarUrl = computed(() => {
+  const url = userStore.userInfo.avatar_url;
+  if (!url) return '';
+  
+  // 移除URL中可能存在的开头的/media
+  const cleanUrl = url.startsWith('/media/') ? url.substring(6) : url;
+  // 使用API URL访问头像
+  return `${baseURL}/media/${cleanUrl}`;
+});
 
 const username = computed(() => userStore.name || 'momo');
 const userInitial = computed(() => username.value.charAt(0).toUpperCase());
@@ -43,9 +76,23 @@ const userInitial = computed(() => username.value.charAt(0).toUpperCase());
 
 const emit = defineEmits(['menuClick']);
 
-const handleMenuClick = ({ key }) => {
+const handleMenuClick = async ({ key }) => {
   if (key === 'signout') {
     userStore.userlogout();
+  } else if (key === 'settings') {
+    router.push('/user-profile');
+  } else if (key === 'statistics') {
+    try {
+      const response = await getUserStatic(userStore.userInfo.id);
+      userStats.value = response.data;
+      // 显示统计信息
+      router.push({
+        path: '/user-statistics',
+        query: { stats: JSON.stringify(userStats.value) }
+      });
+    } catch (error) {
+      console.error('获取用户统计信息失败:', error);
+    }
   }
   emit('menuClick', key);
 };

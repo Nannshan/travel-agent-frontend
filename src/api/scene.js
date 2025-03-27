@@ -14,3 +14,8 @@ export function getSceneList() {
 export function searchScene(name) {
     return myAxios.get(`/api/SceneManagement/sceneByName/${name}`);
 }
+
+//根据名称精确搜索景点
+export function searchAccurateScene(name) {
+    return myAxios.get(`/api/SceneManagement/accurateSceneByName/${name}`);
+}

@@ -164,7 +164,7 @@ const props = defineProps({
 const checkIfStarred = async () => {
   try {
     if (!userStore.isLoggedIn) return;
-    const res = await getStars(userStore.userId);
+    const res = await getStars(userStore.id);
     const starList = res.data || [];
     isStarred.value = starList.some(item => item.id === Number(props.id));
   } catch (error) {
@@ -181,11 +181,11 @@ const handleStarClick = async () => {
   try {
     starLoading.value = true;
     if (isStarred.value) {
-      await removeStar(userStore.userId, props.id);
+      await removeStar(userStore.id, props.id);
       message.success("取消收藏成功");
       isStarred.value = false;
     } else {
-      await addStar({ userId: userStore.userId, sceneId: props.id });
+      await addStar({ userId: userStore.id, sceneId: props.id });
       message.success("收藏成功");
       isStarred.value = true;
     }

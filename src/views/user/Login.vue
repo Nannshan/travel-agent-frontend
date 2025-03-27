@@ -33,22 +33,58 @@
                   </template>
                 </a-input>
               </a-form-item>
-              <a-form-item name="password">
-                <a-input-password
-                  v-model:value="loginForm.password"
-                  placeholder="请输入密码"
-                  size="large"
-                  class="custom-input"
-                >
-                  <template #prefix>
-                    <LockOutlined class="input-icon" />
-                  </template>
-                </a-input-password>
+
+              <a-form-item>
+                <a-radio-group v-model:value="loginType" class="login-type-group">
+                  <a-radio value="password">密码登录</a-radio>
+                  <a-radio value="code">验证码登录</a-radio>
+                </a-radio-group>
               </a-form-item>
-              <div class="form-footer">
-                <a-checkbox v-model:checked="rememberMe">记住我</a-checkbox>
-                <a class="forgot-link">忘记密码？</a>
-              </div>
+
+              <template v-if="loginType === 'password'">
+                <a-form-item name="password">
+                  <a-input-password
+                    v-model:value="loginForm.password"
+                    placeholder="请输入密码"
+                    size="large"
+                    class="custom-input"
+                  >
+                    <template #prefix>
+                      <LockOutlined class="input-icon" />
+                    </template>
+                  </a-input-password>
+                </a-form-item>
+                <div class="form-footer">
+                  <a-checkbox v-model:checked="rememberMe">记住我</a-checkbox>
+                  <a class="forgot-link">忘记密码？</a>
+                </div>
+              </template>
+
+              <template v-else>
+                <a-form-item name="verificationCode">
+                  <div class="verification-code-container">
+                    <a-input
+                      v-model:value="loginForm.verificationCode"
+                      placeholder="请输入验证码"
+                      size="large"
+                      class="verification-input"
+                    >
+                      <template #prefix>
+                        <SafetyOutlined class="input-icon" />
+                      </template>
+                    </a-input>
+                    <a-button
+                      :disabled="codeCooldown > 0"
+                      @click="sendVerificationCode"
+                      class="send-code-btn"
+                      size="large"
+                    >
+                      {{ codeCooldown > 0 ? `${codeCooldown}秒后重试` : '发送验证码' }}
+                    </a-button>
+                  </div>
+                </a-form-item>
+              </template>
+
               <a-form-item>
                 <a-button
                   type="primary"
@@ -148,9 +184,9 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { MailOutlined, LockOutlined, UserOutlined } from '@ant-design/icons-vue'
+import { MailOutlined, LockOutlined, UserOutlined, SafetyOutlined } from '@ant-design/icons-vue'
 import { useUserStore } from '@/stores/user'
-import { login, signup } from '@/api/user'
+import { login, signup, sendEmailCode } from '@/api/user'
 
 const router = useRouter()
 const route = useRoute()
@@ -160,6 +196,8 @@ const activeTab = ref('login')
 const loginFormRef = ref()
 const registerFormRef = ref()
 const rememberMe = ref(false)
+const loginType = ref('password') // 登录方式：password/code
+const codeCooldown = ref(0) // 验证码冷却时间
 
 // 根据URL参数设置默认标签
 onMounted(() => {
@@ -174,7 +212,8 @@ onMounted(() => {
 // 登录表单
 const loginForm = reactive({
   email: '',
-  password: ''
+  password: '',
+  verificationCode: ''
 })
 
 // 注册表单
@@ -225,8 +264,12 @@ const loginRules = {
     { validator: validateEmail }
   ],
   password: [
-    { required: true, message: '请输入密码' },
+    { required: true, message: '请输入密码', trigger: 'blur' },
     { min: 6, max: 20, message: '长度在 6 到 20 个字符' }
+  ],
+  verificationCode: [
+    { required: true, message: '请输入验证码', trigger: 'blur' },
+    { len: 6, message: '验证码长度应为6位' }
   ]
 }
 
@@ -257,28 +300,69 @@ const registerRules = {
   ]
 }
 
+// 发送验证码
+const sendVerificationCode = async () => {
+  try {
+    // 验证邮箱格式
+    await loginFormRef.value.validateFields(['email'])
+    
+    loading.value = true
+    await sendEmailCode(loginForm.email)
+    message.success('验证码已发送')
+    
+    // 开始倒计时
+    codeCooldown.value = 60
+    const timer = setInterval(() => {
+      codeCooldown.value--
+      if (codeCooldown.value <= 0) {
+        clearInterval(timer)
+      }
+    }, 1000)
+  } catch (error) {
+    message.error(error.message || '验证码发送失败')
+  } finally {
+    loading.value = false
+  }
+}
+
 // 处理登录
 const handleLogin = async (values) => {
   try {
     loading.value = true
-    const res = await login({
+    
+    // 验证必填字段
+    if (loginType.value === 'code' && !loginForm.verificationCode) {
+      message.error('请输入验证码')
+      return
+    }
+    
+    const loginData = {
       email: values.email,
-      password: values.password
-    })
+      type: loginType.value, // 改为type字段
+      ...(loginType.value === 'password' 
+        ? { password: values.password }
+        : { code: values.verificationCode } // 改为code字段
+      )
+    }
+
+    const res = await login(loginData)
 
     // 处理记住我
-    handleRememberMe()
+    if (loginType.value === 'password') {
+      handleRememberMe()
+    }
 
     // 更新用户信息到store
     userStore.setUserInfo(res.data)
 
     message.success('登录成功')
-
-    // 如果有重定向地址，则跳转到重定向地址
-    const redirect = '/user-plan'
-    router.push(redirect)
+    router.push('/agent')
   } catch (error) {
-    message.error(error.message || '登录失败')
+    if (error.response?.status === 400) {
+      message.error('验证码错误或已过期')
+    } else {
+      message.error(error.message || '登录失败')
+    }
   } finally {
     loading.value = false
   }
@@ -475,6 +559,27 @@ const checkLoginStatus = async () => {
   margin-top: 24px;
   color: #909399;
   font-size: 14px;
+}
+
+.login-type-group {
+  margin-bottom: 24px;
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+}
+
+.verification-code-container {
+  display: flex;
+  gap: 12px;
+}
+
+.verification-input {
+  flex: 1;
+}
+
+.send-code-btn {
+  width: 120px;
+  white-space: nowrap;
 }
 
 @media (max-width: 576px) {

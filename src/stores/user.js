@@ -15,6 +15,7 @@ export const useUserStore = defineStore('user', {
     loading: false,
     error: null,
     lastLoginTime: null,
+    avatar_url: null,
   }),
 
   getters: {
@@ -27,6 +28,7 @@ export const useUserStore = defineStore('user', {
       gender: state.gender,
       phone: state.phone,
       preference: state.preference,
+      avatar_url: state.avatar_url,
     }),
     loginStatus: (state) => ({
       isLoggedIn: !!state.id,
@@ -68,6 +70,7 @@ export const useUserStore = defineStore('user', {
       this.phone = userInfo.phone;
       this.preference = userInfo.preference;
       this.lastLoginTime = new Date().toISOString();
+      this.avatar_url = userInfo.avatar_url;
       
       // 保存到本地存储
       this.saveToStorage();
@@ -84,6 +87,7 @@ export const useUserStore = defineStore('user', {
       this.preference = null;
       this.lastLoginTime = null;
       this.error = null;
+      this.avatar_url = null;
 
       // 清除本地存储
       this.clearFromStorage();
@@ -101,6 +105,7 @@ export const useUserStore = defineStore('user', {
           phone: this.phone,
           preference: this.preference,
           lastLoginTime: this.lastLoginTime,
+          avatar_url: this.avatar_url,
         };
         localStorage.setItem('userInfo', JSON.stringify(userInfo));
       } catch (error) {
@@ -149,13 +154,34 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    // 更新用户信息
+    // 更新用户信息状态
+    updateUserState(userInfo) {
+      if (userInfo.id && userInfo.id !== this.id) {
+        console.error('用户ID不匹配');
+        return;
+      }
+      
+      // 只更新提供的字段
+      if (userInfo.email !== undefined) this.email = userInfo.email;
+      if (userInfo.name !== undefined) this.name = userInfo.name;
+      if (userInfo.age !== undefined) this.age = userInfo.age;
+      if (userInfo.gender !== undefined) this.gender = userInfo.gender;
+      if (userInfo.phone !== undefined) this.phone = userInfo.phone;
+      if (userInfo.preference !== undefined) this.preference = userInfo.preference;
+      if (userInfo.avatar_url !== undefined) this.avatar_url = userInfo.avatar_url;
+      
+      // 保存到本地存储
+      this.saveToStorage();
+    },
+
+    // 调用API更新用户信息
     async updateUserInfo(userData) {
       try {
         this.setLoading(true);
         const response = await apiUpdateUserInfo(this.id, userData);
-        this.setUserInfo(response.data);
+        this.updateUserState(response.data);
         message.success('个人信息更新成功');
+        return response.data;
       } catch (error) {
         this.setError(error.response?.data?.message || '更新个人信息失败');
         throw error;

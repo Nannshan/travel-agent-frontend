@@ -1,23 +1,40 @@
 <template>
   <div class="home-container">
     <nav class="navbar">
-      <div class="logo">Travel Agent</div>
+      <div class="logo">漫程方略</div>
       <div class="nav-links">
         <router-link to="/login?tab=login" class="nav-btn login-btn">登录</router-link>
         <router-link to="/login?tab=register" class="nav-btn signup-btn">注册</router-link>
       </div>
     </nav>
 
-    <section class="hero">
+    <div class="hero">
+      <div class="hero-overlay"></div>
       <div class="hero-content">
-        <h1 class="hero-title">探索世界的新方式</h1>
-        <p class="hero-subtitle">让我们为您打造完美的旅行体验</p>
-        <button class="get-started-btn" @click="handleGetStarted">开始体验</button>
+        <div class="text-content">
+          <h1 class="hero-title">探索世界的新方式</h1>
+          <p class="hero-subtitle">让AI为您定制完美旅行计划</p>
+          <div class="features">
+            <div class="feature-item">
+              <span class="feature-icon">🎯</span>
+              <span>智能规划路线</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon">🌈</span>
+              <span>个性化推荐</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon">⚡</span>
+              <span>天气提醒</span>
+            </div>
+          </div>
+          <button class="get-started-btn" @click="handleGetStarted">
+            开始规划
+            <span class="btn-icon">→</span>
+          </button>
+        </div>
       </div>
-      <div class="hero-image">
-        <img src="@/assets/travel-illustration.jpg" alt="Travel illustration">
-      </div>
-    </section>
+    </div>
   </div>
 </template>
 
@@ -34,7 +51,9 @@ const handleGetStarted = () => {
 <style scoped>
 .home-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  position: relative;
+  background: #1a1a1a;
+  color: white;
 }
 
 .navbar {
@@ -42,8 +61,8 @@ const handleGetStarted = () => {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 2rem;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
+  background: rgba(218, 210, 125, 0.3);
+  backdrop-filter: blur(2px);
   position: fixed;
   top: 0;
   left: 0;
@@ -54,7 +73,8 @@ const handleGetStarted = () => {
 .logo {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: white;
+  letter-spacing: 1px;
 }
 
 .nav-links {
@@ -67,55 +87,101 @@ const handleGetStarted = () => {
   border-radius: 6px;
   text-decoration: none;
   transition: all 0.3s ease;
+  font-weight: 500;
 }
 
 .login-btn {
-  color: #2c3e50;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .login-btn:hover {
-  background: rgba(44, 62, 80, 0.1);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .signup-btn {
-  background: #2c3e50;
+  background: #3498db;
   color: white;
+  border: 1px solid #3498db;
 }
 
 .signup-btn:hover {
-  background: #34495e;
+  background: #2980b9;
+  border-color: #2980b9;
 }
 
 .hero {
+  height: 100vh;
+  position: relative;
+  background-image: url('@/assets/travel-illustration.jpg');
+  background-size: cover;
+  background-position: center;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 8rem 4rem 4rem;
-  max-width: 1200px;
-  margin: 0 auto;
-  gap: 2rem;
+}
+
+.hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1;
 }
 
 .hero-content {
-  flex: 1;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  padding: 0 4rem;
+}
+
+.text-content {
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: center;
 }
 
 .hero-title {
-  font-size: 3.5rem;
+  font-size: 4rem;
   font-weight: 700;
-  color: #2c3e50;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   line-height: 1.2;
+  background: linear-gradient(45deg, #3498db, #2ecc71);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .hero-subtitle {
-  font-size: 1.25rem;
-  color: #34495e;
-  margin-bottom: 2rem;
+  font-size: 1.5rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 3rem;
+}
+
+.features {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.feature-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.feature-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
 }
 
 .get-started-btn {
-  padding: 1rem 2rem;
+  padding: 1rem 2.5rem;
   font-size: 1.1rem;
   background: #3498db;
   color: white;
@@ -123,38 +189,42 @@ const handleGetStarted = () => {
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
 }
 
 .get-started-btn:hover {
   background: #2980b9;
   transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
 }
 
-.hero-image {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.btn-icon {
+  transition: transform 0.3s ease;
 }
 
-.hero-image img {
-  max-width: 100%;
-  height: auto;
+.get-started-btn:hover .btn-icon {
+  transform: translateX(4px);
 }
 
 @media (max-width: 768px) {
-  .hero {
-    flex-direction: column;
-    padding: 6rem 2rem 2rem;
-    text-align: center;
+  .hero-content {
+    padding: 0 2rem;
   }
 
   .hero-title {
     font-size: 2.5rem;
   }
 
-  .hero-image {
-    order: -1;
+  .hero-subtitle {
+    font-size: 1.25rem;
+  }
+
+  .features {
+    flex-direction: column;
+    gap: 1.5rem;
   }
 }
 </style>

@@ -127,7 +127,7 @@ const currentPage = ref(1);
 const pageSize = ref(12);
 
 const filterForm = ref({
-  province: undefined,
+  province: "北京",
   city: undefined
 });
 

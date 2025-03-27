@@ -48,9 +48,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { getChatList, deleteChat, updateChat } from '../api/chat';
-import { useUserStore } from '../stores/user';
+import { ref, onMounted, watch } from 'vue';
+import { getChatList, deleteChat, updateChat } from '@/api/chat';
+import { getByTwo } from '@/api/plan';
+import { useUserStore } from '@/stores/user';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 
@@ -74,14 +75,22 @@ const currentEditChat = ref(null);
 
 const fetchChatHistory = async () => {
   try {
-    if (userStore.id) {
-      const response = await getChatList(userStore.id);
+    if (userStore.userInfo?.id) {
+      const response = await getChatList(userStore.userInfo.id);
       chatHistory.value = response.data;
     }
   } catch (error) {
     console.error('获取聊天历史失败:', error);
+    message.error('获取聊天历史失败');
   }
 };
+
+// 监听visible变化，当显示时刷新列表
+watch(() => props.visible, (newVisible) => {
+  if (newVisible && userStore.isLoggedIn) {
+    fetchChatHistory();
+  }
+});
 
 onMounted(() => {
   if (userStore.isLoggedIn) {
@@ -94,9 +103,28 @@ const onClose = () => {
 };
 
 const selectChat = async (chat) => {
-  await fetchChatHistory();
-  emit('select', chat);
-  onClose();
+  try {
+    // 先获取最新的聊天历史
+    await fetchChatHistory();
+    
+    // 尝试获取对应的旅行计划
+    try {
+      const planResponse = await getByTwo(userStore.userInfo.id, chat.id);
+      emit('select', { chat, planId: planResponse.data.id });
+    } catch (error) {
+      if (error.response && error.response.status === 404) {
+        // 如果没有找到计划，只传递聊天信息
+        emit('select', { chat, planId: null });
+      } else {
+        throw error;
+      }
+    }
+    
+    onClose();
+  } catch (error) {
+    console.error('选择聊天记录失败:', error);
+    message.error('加载聊天记录失败');
+  }
 };
 
 const showEditModal = (chat) => {

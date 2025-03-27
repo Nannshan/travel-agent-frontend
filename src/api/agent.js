@@ -1,4 +1,5 @@
 import myAxios from "../util/request.js";
+import OpenAI from "openai";
 
 // 创建新的对话线程
 export const createThread = async () => {
@@ -24,14 +25,33 @@ export const getThread = async (threadId) => {
 
 
 // 非流式消息
-export const sendMessageInvoke = async (threadId, assistantId, input) => {
+export const sendInitialMessageInvoke = async (threadId, assistantId, input) => {
+  try {
+    const response = await myAxios.post(`/agent/threads/${threadId}/runs/wait`, {
+      assistant_id: assistantId,
+      input: input,
+      stream_mode: ["values"],
+    });
+    const messages = response.data.messages;
+    // 返回最后一条消息的content
+    return messages[messages.length - 1].content;
+  } catch (error) {
+    console.error('发送消息失败:', error.message);
+    throw error;
+  }
+};
+
+export const sendUserMessageInvoke = async (threadId, assistantId, input) => {
   try {
     const response = await myAxios.post(`/agent/threads/${threadId}/runs/wait`, {
       assistant_id: assistantId,
       command: {resume: input},
       stream_mode: ["values"],
     });
-    return response.data.plans;
+    const messages = response.data.messages;
+    // 返回最后一条消息的content
+    console.log(messages[messages.length - 1].content);
+    return messages[messages.length - 1].content;
   } catch (error) {
     console.error('发送消息失败:', error.message);
     throw error;
@@ -100,5 +120,38 @@ export const sendUserMessageStream = async (threadId, assistantId, resume, onMes
   } catch (error) {
     console.error('发送消息失败:', error.message);
     throw error;
+  }
+};
+
+const openai = new OpenAI({
+  baseURL: 'https://api.deepseek.com',
+  apiKey: 'sk-6bf57ceb23e9467cb5e77f81b57b8c84',
+  dangerouslyAllowBrowser: true
+});
+
+export const generateTitle = async (messageContents) => {
+  try {
+    const messages = [
+      { 
+        role: "system", 
+        content: "你是一个标题生成助手。请根据对话内容生成一个简短的标题，主要关注旅行目的地和特点。标题长度控制在15个字以内。" 
+      },
+      { 
+        role: "user", 
+        content: `请为以下对话生成一个标题：\n${messageContents}` 
+      }
+    ];
+    
+    const completion = await openai.chat.completions.create({
+      messages: messages,
+      model: "deepseek-chat",
+      max_tokens: 50,
+      temperature: 0.7
+    });
+
+    return completion.choices[0].message.content;
+  } catch (error) {
+    console.error('生成标题失败:', error);
+    return '新的旅行计划';  // 返回默认标题
   }
 };

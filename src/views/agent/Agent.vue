@@ -1,41 +1,39 @@
 <template>
-  <div class="left-section">
+  <div class="agent-container">
     <!-- 左侧聊天区域 -->
     <div class="chat-container">
       <div class="chat-header">
         <h2>旅行规划助手</h2>
-        <div class="header-right">
-          <a-button type="text" @click="() => handleNewChat()">
-            <template #icon>
-              <plus-outlined />
-            </template>
+        <div class="header-actions">
+          <a-button type="text" @click="handleNewChat">
+            <template #icon><plus-outlined /></template>
             新建聊天
           </a-button>
           <a-button type="text" @click="showHistory = true">
-            <template #icon>
-              <history-outlined />
-            </template>
+            <template #icon><history-outlined /></template>
             历史记录
           </a-button>
         </div>
       </div>
+      
       <Chat
         ref="chatRef"
+        :chat-id="currentChatId"
         :reset="resetChat"
-        :chat-id="$route.params.id"
         @new-chat="handleNewChat"
         @ready-generate="handleReadyGenerate"
+        @load-plan="handlePlanLoad"
       />
     </div>
 
     <!-- 右侧区域 -->
     <div class="right-section">
-      <Map v-if="!showTripPlan" />
-      <TripPlan v-else :plan-id="planId" />
+      <Recommend v-if="!showTripPlan || !currentPlanId" />
+      <TripPlan v-else-if="currentPlanId" :plan-id="currentPlanId" />
     </div>
 
     <!-- 聊天历史抽屉 -->
-    <chat-history
+    <ChatHistory
       v-model:visible="showHistory"
       @select="handleHistorySelect"
     />
@@ -43,26 +41,54 @@
 </template>
 
 <script setup>
-import Map from '@/components/Map.vue';
+import { ref, computed, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import Recommend from '@/components/Recommend.vue';
 import Chat from '@/components/Chat.vue';
 import TripPlan from '@/components/TripPlan.vue';
 import ChatHistory from '@/components/ChatHistory.vue';
 import { HistoryOutlined, PlusOutlined } from '@ant-design/icons-vue';
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { getByTwo } from '@/api/plan.js';
+import { useUserStore } from '@/stores/user';
 
 const router = useRouter();
+const route = useRoute();
+const userStore = useUserStore();
+
+// 状态管理
 const showHistory = ref(false);
 const resetChat = ref(false);
 const showTripPlan = ref(false);
-const planId = ref(null);
+const currentPlanId = ref(null);
+const currentChatId = computed(() => route.params.id);
 const chatRef = ref(null);
 
-// 处理新建聊天按钮点击
-const handleNewChat = async (chatId) => {
+// 监听路由参数变化，自动加载计划
+watch(currentChatId, async (newChatId) => {
+  if (newChatId && userStore.userInfo?.id) {
+    try {
+      const response = await getByTwo(userStore.userInfo.id, newChatId);
+      if (response.data?.id) {
+        handlePlanLoad(response.data.id);
+      }
+    } catch (error) {
+      if (error.response?.status !== 404) {
+        console.error('获取计划失败:', error);
+      }
+      showTripPlan.value = false;
+    }
+  }
+}, { immediate: true });
+
+// 处理新建聊天
+const handleNewChat = async (event) => {
   try {
     showTripPlan.value = false;
-    planId.value = null;
+    currentPlanId.value = null;
+    
+    // 检查参数类型，确保正确处理chatId
+    const chatId = typeof event === 'string' ? event : null;
+    
     if (chatId) {
       await router.push(`/agent/chat/${chatId}`);
     } else {
@@ -75,32 +101,43 @@ const handleNewChat = async (chatId) => {
   }
 };
 
-// 处理选择历史记录
-const handleHistorySelect = async (chat) => {
-  if (chat && chat.id) {
-    showTripPlan.value = false;
-    planId.value = null;
-    await router.push(`/agent/chat/${chat.id}`);
-    showHistory.value = false;
+// 处理历史记录选择
+const handleHistorySelect = async ({ chat, planId }) => {
+  try {
+    if (chat && chat.id) {
+      await router.push(`/agent/chat/${chat.id}`);
+      if (planId) {
+        handlePlanLoad(planId);
+      }
+      showHistory.value = false;
+    }
+  } catch (error) {
+    console.error('选择历史记录失败:', error);
   }
 };
 
+// 处理计划加载
+const handlePlanLoad = (planId) => {
+  currentPlanId.value = planId;
+  showTripPlan.value = true;
+};
+
 // 处理准备生成行程
-const handleReadyGenerate = (id) => {
-  planId.value = id;
+const handleReadyGenerate = (planId) => {
+  currentPlanId.value = planId;
   showTripPlan.value = true;
 };
 </script>
 
 <style scoped>
-.left-section {
+.agent-container {
   display: flex;
   height: 100vh;
   width: 100%;
 }
 
 .chat-container {
-  flex: 1;
+  flex: 0 0 35%;
   display: flex;
   flex-direction: column;
   border-right: 1px solid #e0e0e0;
@@ -112,9 +149,10 @@ const handleReadyGenerate = (id) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background: #fff;
 }
 
-.header-right {
+.header-actions {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -127,8 +165,9 @@ const handleReadyGenerate = (id) => {
 }
 
 .right-section {
-  flex: 1;
+  flex: 0 0 65%;
   background: #f9f9f9;
+  overflow: hidden;
 }
 
 .map-container {
