@@ -39,14 +39,15 @@
 <script setup>
 import { computed, ref, watch } from "vue";
 import { Avatar as AAvatar } from "ant-design-vue";
-import { UserOutlined } from '@ant-design/icons-vue';
+import { UserOutlined } from "@ant-design/icons-vue";
 import agentAvatar from "@/assets/agent-avatar.svg";
 import {
   createThread,
   sendInitialMessageStream,
   sendInitialMessageInvoke,
   sendUserMessageInvoke,
-  sendUserMessageStream, generateTitle,
+  sendUserMessageStream,
+  generateTitle,
 } from "@/api/agent.js";
 import { useUserStore } from "@/stores/user";
 import { addChat, getChatDetail, updateChat } from "@/api/chat.js";
@@ -67,15 +68,15 @@ const emit = defineEmits(["new-chat", "ready-generate", "load-plan"]);
 const userStore = useUserStore();
 
 // 获取API基础URL
-const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 // 计算用户头像URL
 const userAvatarUrl = computed(() => {
   const url = userStore.userInfo.avatar_url;
-  if (!url) return '';
-  
+  if (!url) return "";
+
   // 移除URL中可能存在的开头的/media
-  const cleanUrl = url.startsWith('/media/') ? url.substring(6) : url;
+  const cleanUrl = url.startsWith("/media/") ? url.substring(6) : url;
   // 使用API URL访问头像
   return `${baseURL}/media/${cleanUrl}`;
 });
@@ -243,9 +244,11 @@ const handleSendMessage = async () => {
     // 更新数据库中的消息记录
     if (props.chatId) {
       // 提取消息内容用于生成标题
-      const messageContents = messages.value.map(msg => msg.content).join('\n');
+      const messageContents = messages.value
+        .map((msg) => msg.content)
+        .join("\n");
       const title = await generateTitle(messageContents);
-      
+
       const chatData = {
         title: title,
         messages: JSON.stringify(messages.value),
@@ -274,11 +277,13 @@ async function handle_plan(planData) {
     // 如果计划存在，则更新
     const res = await updatePlan(existingPlan.data.id, planData);
     emit("ready-generate", res.data.id);
+    emit("load-plan", res.data.id); // 直接触发 load-plan 事件
   } catch (error) {
     if (error.response && error.response.status === 404) {
       // 如果计划不存在，则新建
       const res = await addPlan(userStore.userInfo.id, planData);
       emit("ready-generate", res.data.id);
+      emit("load-plan", res.data.id); // 直接触发 load-plan 事件
     } else {
       throw error; // 其他错误则抛出
     }
@@ -295,11 +300,7 @@ async function pushAIMessage(data) {
   if (jsonData.type === "pre") {
     messages.value[messages.value.length - 1].content = jsonData.res;
     scrollToBottom();
-    return;
-  }
-
-  // 检查是否为生成的景点推荐
-  if (jsonData.type === "generate") {
+  } else {
     const planData = {
       userid: userStore.userInfo.id,
       chatid: props.chatId,
@@ -307,7 +308,7 @@ async function pushAIMessage(data) {
       threadid: threadId.value,
     };
     await handle_plan(planData);
-    messages.value[messages.value.length - 1].content = jsonData.res;
+    messages.value[messages.value.length - 1].content = jsonData.res || "已为您规划好一场完美的旅行，祝您旅途愉快！";
     scrollToBottom();
   }
 }

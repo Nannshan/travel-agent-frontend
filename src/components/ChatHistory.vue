@@ -201,8 +201,8 @@ const formatTime = (timeStr) => {
   transition: all 0.3s;
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  gap: 24px;
+  align-items: flex-start;
+  gap: 12px;
 }
 
 .history-item:hover {
@@ -216,40 +216,40 @@ const formatTime = (timeStr) => {
 
 .history-item-header {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .history-item-info {
   display: flex;
-  flex: 1;
-  min-width: 0;
-  gap: 16px;
-  align-items: center;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .history-item-title {
   font-weight: 500;
   color: #333;
-  flex-shrink: 0;
+  font-size: 16px;
 }
 
 .history-item-time {
   font-size: 12px;
   color: #999;
-  flex-shrink: 0;
 }
 
 .history-item-actions {
   display: flex;
   gap: 4px;
-  flex-shrink: 0;
+  padding-top: 4px;
 }
 
 .history-item-actions .ant-btn {
   color: #999;
+  padding: 4px 8px;
 }
 
 .history-item-actions .ant-btn:hover {
   color: #1890ff;
+  background: rgba(24, 144, 255, 0.1);
 }
 </style> 

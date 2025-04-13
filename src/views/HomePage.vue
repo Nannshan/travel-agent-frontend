@@ -17,7 +17,7 @@
           <div class="features">
             <div class="feature-item">
               <span class="feature-icon">🎯</span>
-              <span>智能规划路线</span>
+              <span>智能规划</span>
             </div>
             <div class="feature-item">
               <span class="feature-icon">🌈</span>

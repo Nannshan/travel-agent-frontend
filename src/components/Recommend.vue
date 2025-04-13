@@ -5,6 +5,9 @@
       <a-spin size="large" />
       <p>精彩内容加载中...</p>
     </div>
+    <div v-else-if="error" class="error-container">
+      <p>加载失败，正在重试...</p>
+    </div>
     <div v-else class="recommend-container">
       <div 
         class="recommend-item" 
@@ -33,6 +36,7 @@ import { useRouter } from 'vue-router';
 const router = useRouter();
 const recommendations = ref([]);
 const loading = ref(true);
+const error = ref(null);
 
 const cleanFeatureText = (feature) => {
   if (!feature) return '';
@@ -62,8 +66,14 @@ const fetchRecommendations = async () => {
     const detailPromises = selectedIds.map(id => getSceneDetail(id));
     const results = await Promise.all(detailPromises);
     
-    recommendations.value = results
-      .filter(res => res.data) // 过滤掉可能的无效数据
+    // 过滤掉无效数据并确保有足够的数据
+    const validResults = results.filter(res => res.data);
+    
+    if (validResults.length === 0) {
+      throw new Error('没有获取到有效的推荐数据');
+    }
+    
+    recommendations.value = validResults
       .map(res => ({
         ...res.data,
         features: Array.isArray(res.data.features) 
@@ -72,6 +82,10 @@ const fetchRecommendations = async () => {
       }));
   } catch (error) {
     console.error('获取景点列表失败:', error);
+    // 如果失败，尝试重新获取
+    setTimeout(() => {
+      fetchRecommendations();
+    }, 3000);
   } finally {
     loading.value = false;
   }

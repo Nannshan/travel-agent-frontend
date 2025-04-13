@@ -129,6 +129,7 @@ const openai = new OpenAI({
   dangerouslyAllowBrowser: true
 });
 
+//生成昵称
 export const generateTitle = async (messageContents) => {
   try {
     const messages = [
@@ -138,7 +139,7 @@ export const generateTitle = async (messageContents) => {
       },
       { 
         role: "user", 
-        content: `请为以下对话生成一个标题：\n${messageContents}` 
+        content: `请为以下对话生成一个标题：\n${messageContents}，直接返回标题，不要使用json格式。`
       }
     ];
     

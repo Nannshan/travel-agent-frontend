@@ -28,8 +28,15 @@
 
     <!-- 右侧区域 -->
     <div class="right-section">
-      <Recommend v-if="!showTripPlan || !currentPlanId" />
-      <TripPlan v-else-if="currentPlanId" :plan-id="currentPlanId" />
+      <Recommend 
+        ref="recommendRef"
+        v-if="!showTripPlan || !currentPlanId" 
+      />
+      <TripPlan 
+        v-else-if="currentPlanId" 
+        :plan-id="currentPlanId"
+        ref="tripPlanRef"
+      />
     </div>
 
     <!-- 聊天历史抽屉 -->
@@ -41,7 +48,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import Recommend from '@/components/Recommend.vue';
 import Chat from '@/components/Chat.vue';
@@ -62,6 +69,8 @@ const showTripPlan = ref(false);
 const currentPlanId = ref(null);
 const currentChatId = computed(() => route.params.id);
 const chatRef = ref(null);
+const recommendRef = ref(null);
+const tripPlanRef = ref(null);
 
 // 监听路由参数变化，自动加载计划
 watch(currentChatId, async (newChatId) => {
@@ -118,8 +127,19 @@ const handleHistorySelect = async ({ chat, planId }) => {
 
 // 处理计划加载
 const handlePlanLoad = (planId) => {
-  currentPlanId.value = planId;
-  showTripPlan.value = true;
+  if (planId) {
+    currentPlanId.value = planId;
+    showTripPlan.value = true;
+    // 使用 nextTick 确保组件已经挂载
+    nextTick(() => {
+      if (tripPlanRef.value) {
+        tripPlanRef.value.refresh();
+      }
+    });
+  } else {
+    currentPlanId.value = null;
+    showTripPlan.value = false;
+  }
 };
 
 // 处理准备生成行程
@@ -127,6 +147,14 @@ const handleReadyGenerate = (planId) => {
   currentPlanId.value = planId;
   showTripPlan.value = true;
 };
+
+// 添加生命周期钩子
+onMounted(() => {
+  // 确保Recommend组件在挂载时重新加载数据
+  if (recommendRef.value) {
+    recommendRef.value.$forceUpdate();
+  }
+});
 </script>
 
 <style scoped>
