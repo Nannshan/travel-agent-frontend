@@ -49,8 +49,8 @@
                 <div v-for="(day, dayIndex) in planData.travel_plan" 
                      :key="dayIndex" 
                      class="timeline-item"
-                     @mouseenter="highlightDay(dayIndex)"
-                     @mouseleave="clearHighlight">
+                     @mouseenter="hoveredDayIndex = dayIndex"
+                     @mouseleave="hoveredDayIndex = -1">
                   <div class="timeline-date">
                     <div class="day-number">第{{ numberToChinese(dayIndex + 1) }}天</div>
                     <div class="date">{{ formatShortDate(day.date) }}</div>
@@ -75,16 +75,18 @@
                 </div>
               </div>
             </div>
-            <div class="overview-map">
-              <div id="overview-map-container" class="map"></div>
+            <div class="overview-map" v-if="planData && cityCenter">
+              <Map 
+                ref="mapRef"
+                :plan-data="planData"
+                :city-center="cityCenter"
+                map-id="overview-map-container"
+                :highlight-day-index="hoveredDayIndex"
+                @updateFoodList="handleFoodListUpdate"
+              />
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- 地图容器 -->
-      <div v-if="showMap" class="map-container">
-        <div id="container" class="map"></div>
       </div>
 
       <div class="days-nav">
@@ -116,40 +118,86 @@
             </div>
           </div>
 
-          <div class="time-section">
-            <h4>上午</h4>
-            <div class="activity-card">
-              <div class="activity-header">
-                <h5 
-                  class="attraction-link"
-                  @click="handleSceneClick(currentDayPlan.itinerary.morning.attraction)"
-                >
-                  {{ currentDayPlan.itinerary.morning.attraction }}
-                </h5>
-              </div>
-              <p class="activity-desc">{{ currentDayPlan.itinerary.morning.arrangement }}</p>
-              <div class="activity-footer">
-                <span class="tag">推荐理由</span>
-                <p>{{ currentDayPlan.itinerary.morning.recommendation_reason }}</p>
+          <div class="day-schedule">
+            <div class="time-section morning-section" v-if="currentDayPlan.itinerary.morning.attraction">
+              <h4>上午</h4>
+              <div class="activity-card">
+                <div class="activity-header">
+                  <h5 
+                    class="attraction-link"
+                    @click="handleSceneClick(currentDayPlan.itinerary.morning.attraction)"
+                  >
+                    {{ currentDayPlan.itinerary.morning.attraction }}
+                  </h5>
+                </div>
+                <p class="activity-desc">{{ currentDayPlan.itinerary.morning.arrangement }}</p>
+                <div class="activity-footer">
+                  <span class="tag">推荐理由</span>
+                  <p>{{ currentDayPlan.itinerary.morning.recommendation_reason }}</p>
+                  <div class="preparation-section" v-if="currentDayPlan.itinerary.morning.preparation">
+                    <span class="preparation-tag">准备事项</span>
+                    <p>{{ currentDayPlan.itinerary.morning.preparation }}</p>
+                  </div>
+                  <div class="travel-guide-section" v-if="currentDayPlan.itinerary.morning.travel_guide">
+                    <span class="travel-guide-tag">旅行指南</span>
+                    <p>{{ currentDayPlan.itinerary.morning.travel_guide }}</p>
+                  </div>
+                  <div class="nearby-food">
+                    <span class="food-tag">附近美食</span>
+                    <div class="food-list" v-if="morningFoodList && morningFoodList.length > 0">
+                      <div v-for="food in morningFoodList" :key="food.id" class="food-item">
+                        <div class="food-name">{{ food.name }}</div>
+                        <div class="food-details">
+                          <span class="food-distance">📍 {{ food.distance }}米</span>
+                          <span class="food-address" v-if="food.address">{{ food.address }}</span>
+                          <span class="food-tel" v-if="food.tel">📞 {{ food.tel }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <p v-else class="no-food">暂无附近美食信息</p>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div class="time-section">
-            <h4>下午</h4>
-            <div class="activity-card">
-              <div class="activity-header">
-                <h5 
-                  class="attraction-link"
-                  @click="handleSceneClick(currentDayPlan.itinerary.afternoon.attraction)"
-                >
-                  {{ currentDayPlan.itinerary.afternoon.attraction }}
-                </h5>
-              </div>
-              <p class="activity-desc">{{ currentDayPlan.itinerary.afternoon.arrangement }}</p>
-              <div class="activity-footer">
-                <span class="tag">推荐理由</span>
-                <p>{{ currentDayPlan.itinerary.afternoon.recommendation_reason }}</p>
+            <div class="time-section afternoon-section" v-if="currentDayPlan.itinerary.afternoon.attraction">
+              <h4>下午</h4>
+              <div class="activity-card">
+                <div class="activity-header">
+                  <h5 
+                    class="attraction-link"
+                    @click="handleSceneClick(currentDayPlan.itinerary.afternoon.attraction)"
+                  >
+                    {{ currentDayPlan.itinerary.afternoon.attraction }}
+                  </h5>
+                </div>
+                <p class="activity-desc">{{ currentDayPlan.itinerary.afternoon.arrangement }}</p>
+                <div class="activity-footer">
+                  <span class="tag">推荐理由</span>
+                  <p>{{ currentDayPlan.itinerary.afternoon.recommendation_reason }}</p>
+                  <div class="preparation-section" v-if="currentDayPlan.itinerary.afternoon.preparation">
+                    <span class="preparation-tag">准备事项</span>
+                    <p>{{ currentDayPlan.itinerary.afternoon.preparation }}</p>
+                  </div>
+                  <div class="travel-guide-section" v-if="currentDayPlan.itinerary.afternoon.travel_guide">
+                    <span class="travel-guide-tag">旅行指南</span>
+                    <p>{{ currentDayPlan.itinerary.afternoon.travel_guide }}</p>
+                  </div>
+                  <div class="nearby-food">
+                    <span class="food-tag">附近美食</span>
+                    <div class="food-list" v-if="afternoonFoodList && afternoonFoodList.length > 0">
+                      <div v-for="food in afternoonFoodList" :key="food.id" class="food-item">
+                        <div class="food-name">{{ food.name }}</div>
+                        <div class="food-details">
+                          <span class="food-distance">📍 {{ food.distance }}米</span>
+                          <span class="food-address" v-if="food.address">{{ food.address }}</span>
+                          <span class="food-tel" v-if="food.tel">📞 {{ food.tel }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <p v-else class="no-food">暂无附近美食信息</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -165,13 +213,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue';
+import { ref, computed, onMounted, watch, nextTick, onUnmounted } from 'vue';
 import { getPlanDetail } from '@/api/plan.js';
 import { searchAccurateScene } from '@/api/scene.js';
 import { getCityDetail, getCityCenterDetail } from '@/api/city.js';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { message } from 'ant-design-vue';
-import { EnvironmentOutlined, DownOutlined } from '@ant-design/icons-vue';
+import { DownOutlined } from '@ant-design/icons-vue';
+import Map from './Map.vue';
 
 const props = defineProps({
   planId: {
@@ -179,6 +228,9 @@ const props = defineProps({
     required: true
   }
 });
+
+const route = useRoute();
+const router = useRouter();
 
 const planData = ref(null);
 const currentDay = ref(0);
@@ -188,17 +240,15 @@ const sceneUrlMap = ref({});
 const cityInfo = ref(null);
 const cityCenter = ref(null);
 
-// 地图相关
-const showMap = ref(false);
-const map = ref(null);
-const markers = ref([]);
-
 // 添加控制显示/隐藏的状态
 const showOverview = ref(true);
 
-const overviewMap = ref(null);
-const highlightedMarkers = ref([]);
-const allMarkers = ref([]);
+// 添加新的响应式变量
+const hoveredDayIndex = ref(-1);
+const morningFoodList = ref([]);
+const afternoonFoodList = ref([]);
+
+const mapRef = ref(null);
 
 // 加载CSV数据
 const loadSceneData = async () => {
@@ -226,7 +276,6 @@ const loadSceneData = async () => {
 // 在组件挂载时加载CSV数据
 onMounted(() => {
   loadSceneData();
-  loadAMap();
 });
 
 const currentDayPlan = computed(() => {
@@ -239,8 +288,6 @@ const mainTitle = computed(() => {
   const city = planData.value.travel_plan[0].city || '未知城市';
   return `${city}${numberToChinese(days)}日游`;
 });
-
-const router = useRouter();
 
 // 格式化经纬度
 const formatCoordinate = (value, type) => {
@@ -294,10 +341,6 @@ const fetchPlanData = async () => {
       }
     }
     
-    // 先清空旧数据
-    planData.value = null;
-    // 使用 nextTick 确保 DOM 更新后再设置新数据
-    await nextTick();
     planData.value = response.data;
     
     // 获取城市信息
@@ -315,11 +358,36 @@ const fetchPlanData = async () => {
   }
 };
 
-// 监听planId变化
-watch(() => props.planId, (newId) => {
-  console.log('planId changed:', newId);
+// 监听路由参数变化
+watch(() => route.params.planId, (newId) => {
+  console.log('路由参数变化，新的planId:', newId);
   if (newId) {
-    // 强制重新获取数据
+    // 重置状态
+    planData.value = null;
+    cityInfo.value = null;
+    cityCenter.value = null;
+    morningFoodList.value = [];
+    afternoonFoodList.value = [];
+    currentDay.value = 0;
+    
+    // 重新获取数据
+    fetchPlanData();
+  }
+}, { immediate: true });
+
+// 修改原有的 planId watch
+watch(() => props.planId, (newId) => {
+  console.log('props.planId changed:', newId);
+  if (newId) {
+    // 重置状态
+    planData.value = null;
+    cityInfo.value = null;
+    cityCenter.value = null;
+    morningFoodList.value = [];
+    afternoonFoodList.value = [];
+    currentDay.value = 0;
+    
+    // 重新获取数据
     fetchPlanData();
   } else {
     planData.value = null;
@@ -410,228 +478,90 @@ const getWeatherEmoji = (weather) => {
   return '🌤️';
 };
 
-// 定义刷新方法
-const refresh = async () => {
-  await fetchPlanData();
-};
-
-// 暴露方法给父组件
-defineExpose({
-  refresh
-});
-
-// 初始化地图
-const initMap = () => {
-  if (!window.AMap) {
-    console.error('高德地图 JS API 未加载');
+// 监听当前日期变化，更新美食列表
+watch([currentDay, planData], async ([newDay, newPlanData]) => {
+  console.log('【TripPlan组件】currentDay 或 planData 发生变化:', {
+    当前日期: newDay + 1,
+    计划数据: newPlanData ? '已加载' : '未加载'
+  });
+  
+  // 检查 planData 是否已加载
+  if (!newPlanData?.travel_plan) {
+    console.warn('【TripPlan组件】planData 尚未加载完成');
     return;
   }
-
-  // 创建地图实例
-  map.value = new window.AMap.Map('container', {
-    zoom: 12,
-    center: cityCenter.value ? [cityCenter.value.longitude, cityCenter.value.latitude] : [116.397428, 39.90923],
-    viewMode: '3D'
-  });
-
-  // 添加地图控件
-  map.value.addControl(new window.AMap.Scale());
-  map.value.addControl(new window.AMap.ToolBar());
-};
-
-// 添加景点标记
-const addSceneMarkers = async () => {
-  if (!map.value || !planData.value?.travel_plan) return;
-
-  // 清除现有标记
-  markers.value.forEach(marker => marker.setMap(null));
-  markers.value = [];
-
-  // 获取所有景点
-  const scenes = [];
-  for (const day of planData.value.travel_plan) {
-    if (day.itinerary.morning.attraction) {
-      scenes.push({
-        name: day.itinerary.morning.attraction,
-        time: '上午'
-      });
-    }
-    if (day.itinerary.afternoon.attraction) {
-      scenes.push({
-        name: day.itinerary.afternoon.attraction,
-        time: '下午'
-      });
-    }
+  
+  if (!newPlanData?.travel_plan?.[newDay]) {
+    console.warn('【TripPlan组件】没有找到对应日期的行程数据');
+    return;
   }
-
-  // 为每个景点添加标记
-  for (const scene of scenes) {
-    try {
-      const response = await searchAccurateScene(scene.name);
-      if (response.data?.longitude && response.data?.latitude) {
-        const marker = new window.AMap.Marker({
-          position: [response.data.longitude, response.data.latitude],
-          title: scene.name,
-          map: map.value
-        });
-
-        // 添加信息窗体
-        const infoWindow = new window.AMap.InfoWindow({
-          content: `
-            <div class="info-window">
-              <h3>${scene.name}</h3>
-              <p>${scene.time}</p>
-            </div>
-          `,
-          offset: new window.AMap.Pixel(0, -30)
-        });
-
-        marker.on('click', () => {
-          infoWindow.open(map.value, marker.getPosition());
-        });
-
-        markers.value.push(marker);
-      }
-    } catch (error) {
-      console.error(`获取景点 ${scene.name} 位置失败:`, error);
+  
+  const dayPlan = newPlanData.travel_plan[newDay];
+  console.log('【TripPlan组件】开始处理第', newDay + 1, '天的行程:', dayPlan);
+  
+  // 重置美食列表
+  console.log('【TripPlan组件】重置美食列表');
+  morningFoodList.value = [];
+  afternoonFoodList.value = [];
+  
+  // 触发地图组件更新美食列表
+  if (mapRef.value) {
+    // 延迟一帧，确保视图更新
+    await nextTick();
+    
+    // 触发地图组件的缓存更新事件
+    if (dayPlan.itinerary.morning.attraction) {
+      mapRef.value.updateFoodListFromCache(dayPlan.itinerary.morning.attraction, '上午');
     }
-  }
-
-  // 调整地图视野以包含所有标记
-  if (markers.value.length > 0) {
-    map.value.setFitView();
-  }
-};
-
-// 监听地图显示状态
-watch(showMap, (newVal) => {
-  if (newVal) {
-    nextTick(() => {
-      initMap();
-      addSceneMarkers();
-    });
+    
+    if (dayPlan.itinerary.afternoon.attraction) {
+      mapRef.value.updateFoodListFromCache(dayPlan.itinerary.afternoon.attraction, '下午');
+    }
+  } else {
+    console.warn('【TripPlan组件】地图组件未加载');
   }
 });
 
-// 监听计划数据变化
-watch(() => planData.value, () => {
-  if (showMap.value) {
-    addSceneMarkers();
+// 处理美食列表更新
+const handleFoodListUpdate = ({ timeSlot, foodList }) => {
+  console.log(`【TripPlan组件】接收到美食列表更新:`, {
+    时段: timeSlot,
+    数量: foodList.length,
+    列表: foodList
+  });
+  
+  if (timeSlot === '上午') {
+    console.log('【TripPlan组件】更新上午美食列表:', foodList);
+    morningFoodList.value = JSON.parse(JSON.stringify(foodList));
+    console.log('【TripPlan组件】上午美食列表已更新，长度:', morningFoodList.value.length, '内容:', morningFoodList.value);
+  } else if (timeSlot === '下午') {
+    console.log('【TripPlan组件】更新下午美食列表:', foodList);
+    afternoonFoodList.value = JSON.parse(JSON.stringify(foodList));
+    console.log('【TripPlan组件】下午美食列表已更新，长度:', afternoonFoodList.value.length, '内容:', afternoonFoodList.value);
   }
+};
+
+// 监听美食列表变化，确保视图更新
+watch(morningFoodList, (newVal) => {
+  console.log('【TripPlan组件】morningFoodList 发生变化:', newVal);
 }, { deep: true });
 
-// 加载高德地图 JS API
-const loadAMap = () => {
-  const script = document.createElement('script');
-  script.src = `https://webapi.amap.com/maps?v=2.0&key=YOUR_AMAP_KEY&plugin=AMap.Scale,AMap.ToolBar`;
-  script.async = true;
-  script.onload = () => {
-    if (showMap.value) {
-      initMap();
-      addSceneMarkers();
-    }
-  };
-  document.head.appendChild(script);
-};
+watch(afternoonFoodList, (newVal) => {
+  console.log('【TripPlan组件】afternoonFoodList 发生变化:', newVal);
+}, { deep: true });
 
-// 初始化总览地图
-const initOverviewMap = () => {
-  if (!window.AMap) return;
-  
-  overviewMap.value = new window.AMap.Map('overview-map-container', {
-    zoom: 12,
-    center: cityCenter.value ? [cityCenter.value.longitude, cityCenter.value.latitude] : [116.397428, 39.90923],
-    viewMode: '3D'
-  });
-
-  // 添加地图控件
-  overviewMap.value.addControl(new window.AMap.Scale());
-  overviewMap.value.addControl(new window.AMap.ToolBar());
-
-  // 添加所有景点标记
-  addAllSceneMarkers();
-};
-
-// 添加所有景点标记
-const addAllSceneMarkers = async () => {
-  if (!overviewMap.value || !planData.value?.travel_plan) return;
-
-  // 清除现有标记
-  allMarkers.value.forEach(marker => marker.setMap(null));
-  allMarkers.value = [];
-
-  for (const [dayIndex, day] of planData.value.travel_plan.entries()) {
-    const dayMarkers = [];
-    
-    if (day.itinerary.morning.attraction) {
-      const marker = await addMarker(day.itinerary.morning.attraction, '上午', dayIndex);
-      if (marker) dayMarkers.push(marker);
-    }
-    if (day.itinerary.afternoon.attraction) {
-      const marker = await addMarker(day.itinerary.afternoon.attraction, '下午', dayIndex);
-      if (marker) dayMarkers.push(marker);
-    }
-    
-    allMarkers.value.push(...dayMarkers);
+// 添加对 planData 的监听，当数据首次加载时自动搜索美食
+watch(() => planData.value?.travel_plan, async (newPlan) => {
+  if (newPlan?.length > 0) {
+    // 触发 currentDay 的 watch 来执行美食搜索
+    currentDay.value = currentDay.value;
   }
+}, { immediate: true });
 
-  if (allMarkers.value.length > 0) {
-    overviewMap.value.setFitView();
-  }
-};
-
-// 添加单个标记
-const addMarker = async (sceneName, timeSlot, dayIndex) => {
-  try {
-    const response = await searchAccurateScene(sceneName);
-    if (response.data?.longitude && response.data?.latitude) {
-      const marker = new window.AMap.Marker({
-        position: [response.data.longitude, response.data.latitude],
-        title: sceneName,
-        map: overviewMap.value,
-        label: {
-          content: `第${numberToChinese(dayIndex + 1)}天${timeSlot}`,
-          direction: 'top'
-        }
-      });
-
-      return marker;
-    }
-  } catch (error) {
-    console.error(`获取景点 ${sceneName} 位置失败:`, error);
-  }
-  return null;
-};
-
-// 高亮显示某天的景点
-const highlightDay = (dayIndex) => {
-  clearHighlight();
-  
-  const dayMarkers = allMarkers.value.filter((_, index) => {
-    const markerDayIndex = Math.floor(index / 2);
-    return markerDayIndex === dayIndex;
-  });
-
-  dayMarkers.forEach(marker => {
-    marker.setAnimation('AMAP_ANIMATION_BOUNCE');
-    highlightedMarkers.value.push(marker);
-  });
-};
-
-// 清除高亮
-const clearHighlight = () => {
-  highlightedMarkers.value.forEach(marker => {
-    marker.setAnimation(null);
-  });
-  highlightedMarkers.value = [];
-};
-
-// 监听总览显示状态
-watch(showOverview, (newVal) => {
-  if (newVal) {
-    nextTick(() => {
-      initOverviewMap();
-    });
+// 组件卸载时清理资源
+onUnmounted(() => {
+  if (mapRef.value) {
+    mapRef.value.destroy();
   }
 });
 </script>
@@ -766,10 +696,46 @@ button:hover {
   cursor: pointer;
   transition: background-color 0.3s;
   border-radius: 8px;
+  margin-bottom: 20px;
 }
 
-.day-info:hover {
-  background-color: #f5f5f5;
+.day-schedule {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.time-section {
+  flex: 1;
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid #eaeaea;
+  min-width: 0; /* 防止flex子项溢出 */
+}
+
+.morning-section {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+}
+
+.afternoon-section {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+}
+
+.time-section:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: #1a73e8;
+}
+
+.summary-section {
+  margin-top: 20px;
+  padding: 20px;
+  background: linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%);
+  border-radius: 12px;
+  border: 1px solid #eaeaea;
+  transition: all 0.3s;
 }
 
 .day-title {
@@ -818,40 +784,6 @@ button:hover {
   font-size: 24px;
   font-weight: 600;
   letter-spacing: 0.5px;
-}
-
-.time-section {
-  margin-bottom: 20px;
-  background: #fff;
-  border-radius: 12px;
-  padding: 20px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid #eaeaea;
-}
-
-.time-section:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  border-color: #1a73e8;
-}
-
-.time-section h4 {
-  font-size: 18px;
-  color: #333;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #eaeaea;
-}
-
-.time-section h4::before {
-  content: '';
-  width: 4px;
-  height: 18px;
-  background: #1a73e8;
-  border-radius: 2px;
 }
 
 .activity-card {
@@ -961,21 +893,6 @@ button:hover {
 .attraction-link:hover::after {
   opacity: 1;
   transform: translateX(0);
-}
-
-.summary-section {
-  margin-top: 20px;
-  padding: 20px;
-  background: #fff;
-  border-radius: 12px;
-  border: 1px solid #eaeaea;
-  transition: all 0.3s;
-}
-
-.summary-section:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  border-color: #1a73e8;
 }
 
 .summary-section h4 {
@@ -1120,35 +1037,34 @@ button:hover {
 .timeline-map-container {
   display: flex;
   flex-direction: column;
-  gap: 30px;
-  padding: 20px;
+  gap: 20px;
+  padding: 15px;
 }
 
 .timeline-container {
   width: 100%;
   background: #fff;
-  border-radius: 12px;
-  padding: 40px 20px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  border-radius: 8px;
+  padding: 20px;
 }
 
 .timeline {
   position: relative;
   display: flex;
-  justify-content: space-between;
-  padding: 0 40px;
-  margin: 20px auto;
+  padding: 0;
+  margin: 0 auto;
   max-width: 1200px;
+  gap: 30px;
 }
 
 .timeline::before {
   content: '';
   position: absolute;
-  left: 60px;
-  right: 60px;
-  top: 50px;
-  height: 2px;
-  background: #e8e8e8;
+  left: 0;
+  right: 0;
+  top: 65px;
+  height: 1px;
+  background: #eaeaea;
   z-index: 0;
 }
 
@@ -1158,45 +1074,36 @@ button:hover {
   flex-direction: column;
   align-items: center;
   flex: 1;
-  min-width: 200px;
-  max-width: 300px;
 }
 
 .timeline-date {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
   margin-bottom: 20px;
 }
 
 .day-number {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 500;
   color: #1a73e8;
+  margin-bottom: 2px;
 }
 
 .date {
-  font-size: 14px;
+  font-size: 13px;
   color: #666;
 }
 
 .timeline-node {
-  width: 16px;
-  height: 16px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: #1a73e8;
-  border: 3px solid #fff;
+  border: 2px solid #fff;
   position: relative;
   z-index: 1;
-  box-shadow: 0 0 0 4px rgba(26,115,232,0.1);
-  margin: 10px 0;
-  transition: all 0.3s ease;
-}
-
-.timeline-item:hover .timeline-node {
-  transform: scale(1.2);
-  box-shadow: 0 0 0 6px rgba(26,115,232,0.2);
+  margin: 8px 0;
 }
 
 .timeline-content {
@@ -1207,27 +1114,20 @@ button:hover {
 .timeline-attractions {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   background: #f8f9fa;
-  padding: 16px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  transition: all 0.3s ease;
-}
-
-.timeline-item:hover .timeline-attractions {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+  padding: 12px;
+  border-radius: 8px;
 }
 
 .timeline-attraction {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px;
+  gap: 6px;
+  padding: 6px 10px;
   background: #fff;
-  border-radius: 8px;
-  transition: all 0.3s ease;
+  border-radius: 16px;
+  transition: all 0.2s ease;
 }
 
 .timeline-attraction:hover {
@@ -1235,7 +1135,7 @@ button:hover {
 }
 
 .time-label {
-  padding: 4px 10px;
+  padding: 4px 12px;
   border-radius: 20px;
   font-size: 13px;
   color: #fff;
@@ -1246,12 +1146,13 @@ button:hover {
 .attraction {
   color: #333;
   cursor: pointer;
-  transition: color 0.3s;
-  font-size: 15px;
+  transition: color 0.2s;
+  font-size: 14px;
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding: 0 4px;
 }
 
 .attraction:hover {
@@ -1260,26 +1161,18 @@ button:hover {
 
 .overview-map {
   width: 100%;
-  height: 400px;
-  border-radius: 12px;
+  height: 480px;
+  border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
 }
 
 @media (max-width: 768px) {
   .timeline {
-    overflow-x: auto;
-    justify-content: flex-start;
-    padding-bottom: 20px;
+    gap: 20px;
   }
   
   .timeline-item {
-    margin-right: 40px;
-  }
-  
-  .timeline::before {
-    left: 0;
-    right: 0;
+    min-width: 160px;
   }
 }
 
@@ -1291,5 +1184,160 @@ button:hover {
 
 .collapse-icon.is-collapsed {
   transform: rotate(-180deg);
+}
+
+.nearby-food {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #eaeaea;
+}
+
+.food-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  background: #fff3e0;
+  color: #ff9800;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.food-tag::before {
+  content: '🍽️';
+  margin-right: 6px;
+  font-size: 12px;
+}
+
+.food-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.food-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 10px 12px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #eaeaea;
+  transition: background-color 0.2s ease;
+}
+
+.food-item:hover {
+  background-color: #f9f9f9;
+}
+
+.food-name {
+  font-size: 15px;
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.food-details {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 3px;
+}
+
+.food-distance {
+  font-size: 13px;
+  color: #666;
+  background: #f0f0f0;
+  padding: 2px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.food-address {
+  font-size: 13px;
+  color: #888;
+  flex-grow: 1;
+  flex-shrink: 1;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.food-tel {
+  font-size: 13px;
+  color: #888;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-left: auto;
+}
+
+.no-food {
+  color: #999;
+  font-size: 14px;
+  text-align: center;
+  padding: 12px;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+.preparation-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #eaeaea;
+}
+
+.preparation-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.preparation-tag::before {
+  content: '📝';
+  margin-right: 6px;
+  font-size: 12px;
+}
+
+.travel-guide-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #eaeaea;
+}
+
+.travel-guide-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  background: #fff3e0;
+  color: #ff9800;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.travel-guide-tag::before {
+  content: '🗺️';
+  margin-right: 6px;
+  font-size: 12px;
+}
+
+.preparation-section p,
+.travel-guide-section p {
+  margin: 8px 0 0;
+  color: #666;
+  line-height: 1.6;
+  font-size: 14px;
 }
 </style> 

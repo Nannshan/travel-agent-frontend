@@ -144,7 +144,7 @@ onMounted(() => {
 }
 
 .plan-list-container {
-  flex: 0 0 35%;
+  flex: 0 0 40%;
   display: flex;
   flex-direction: column;
   border-right: 1px solid #e0e0e0;
@@ -213,7 +213,7 @@ onMounted(() => {
 }
 
 .right-section {
-  flex: 0 0 65%;
+  flex: 0 0 60%;
   background: #f9f9f9;
   overflow: hidden;
 }

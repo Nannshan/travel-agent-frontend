@@ -1,12 +1,12 @@
 <template>
   <a-drawer
-    :visible="visible"
-    title="聊天历史"
+    :open="open"
+    title="历史对话"
+    width="800"
     placement="right"
-    width="400"
-    @close="onClose"
+    @close="handleCancel"
   >
-    <div class="chat-history-container">
+    <div class="history-container">
       <a-empty v-if="!chatHistory.length" description="暂无聊天历史" />
       <div v-else class="history-list">
         <div
@@ -23,7 +23,7 @@
             </div>
           </div>
           <div class="history-item-actions">
-            <a-button type="link" size="small" @click.stop="showEditModal(chat)">
+            <a-button type="link" size="small" @click.stop="handleEdit(chat)">
               <template #icon><EditOutlined /></template>
             </a-button>
             <a-button type="link" size="small" @click.stop="handleDelete(chat)">
@@ -36,11 +36,10 @@
 
     <!-- 编辑标题对话框 -->
     <a-modal
-      v-model:visible="editModalVisible"
-      title="修改标题"
-      @ok="handleEditSubmit"
+      v-model:open="editModalOpen"
+      title="编辑对话名称"
+      @ok="handleEditOk"
       @cancel="handleEditCancel"
-      :confirmLoading="editLoading"
     >
       <a-input v-model:value="editTitle" placeholder="请输入新标题" />
     </a-modal>
@@ -56,22 +55,21 @@ import { EditOutlined, DeleteOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 
 const props = defineProps({
-  visible: {
+  open: {
     type: Boolean,
     default: false
   }
 });
 
-const emit = defineEmits(['update:visible', 'select']);
+const emit = defineEmits(['update:open', 'select']);
 
 const chatHistory = ref([]);
 const userStore = useUserStore();
 
 // 编辑标题相关的状态
-const editModalVisible = ref(false);
+const editModalOpen = ref(false);
 const editTitle = ref('');
-const editLoading = ref(false);
-const currentEditChat = ref(null);
+const currentEditingChat = ref(null);
 
 const fetchChatHistory = async () => {
   try {
@@ -85,9 +83,9 @@ const fetchChatHistory = async () => {
   }
 };
 
-// 监听visible变化，当显示时刷新列表
-watch(() => props.visible, (newVisible) => {
-  if (newVisible && userStore.isLoggedIn) {
+// 监听open变化，当显示时刷新列表
+watch(() => props.open, (newOpen) => {
+  if (newOpen && userStore.isLoggedIn) {
     fetchChatHistory();
   }
 });
@@ -98,8 +96,8 @@ onMounted(() => {
   }
 });
 
-const onClose = () => {
-  emit('update:visible', false);
+const handleCancel = () => {
+  emit('update:open', false);
 };
 
 const selectChat = async (chat) => {
@@ -120,42 +118,39 @@ const selectChat = async (chat) => {
       }
     }
     
-    onClose();
+    handleCancel();
   } catch (error) {
     console.error('选择聊天记录失败:', error);
     message.error('加载聊天记录失败');
   }
 };
 
-const showEditModal = (chat) => {
-  currentEditChat.value = chat;
+const handleEdit = (chat) => {
+  currentEditingChat.value = chat;
   editTitle.value = chat.title || '';
-  editModalVisible.value = true;
+  editModalOpen.value = true;
 };
 
 const handleEditCancel = () => {
-  editModalVisible.value = false;
+  editModalOpen.value = false;
   editTitle.value = '';
-  currentEditChat.value = null;
+  currentEditingChat.value = null;
 };
 
-const handleEditSubmit = async () => {
+const handleEditOk = async () => {
   if (!editTitle.value.trim()) {
     message.warning('标题不能为空');
     return;
   }
 
   try {
-    editLoading.value = true;
-    await updateChat(currentEditChat.value.id, { title: editTitle.value.trim() });
+    await updateChat(currentEditingChat.value.id, { title: editTitle.value.trim() });
     message.success('修改成功');
     await fetchChatHistory();
     handleEditCancel();
   } catch (error) {
     console.error('修改失败:', error);
     message.error('修改失败');
-  } finally {
-    editLoading.value = false;
   }
 };
 
@@ -182,7 +177,7 @@ const formatTime = (timeStr) => {
 </script>
 
 <style scoped>
-.chat-history-container {
+.history-container {
   height: 100%;
   padding: 0 16px;
 }
@@ -251,5 +246,74 @@ const formatTime = (timeStr) => {
 .history-item-actions .ant-btn:hover {
   color: #1890ff;
   background: rgba(24, 144, 255, 0.1);
+}
+
+:deep(.right-side-modal) {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0;
+}
+
+:deep(.right-side-modal .ant-modal) {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  width: 800px !important;
+}
+
+:deep(.right-side-modal .ant-modal-content) {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 0;
+}
+
+:deep(.right-side-modal .ant-modal-body) {
+  flex: 1;
+  overflow-y: auto;
+}
+
+:deep(.right-side-modal .ant-modal-wrap) {
+  position: absolute;
+  right: 0;
+}
+
+:deep(.right-side-modal .ant-modal-mask) {
+  background-color: rgba(0, 0, 0, 0.45);
+}
+
+/* 添加滑入动画 */
+:deep(.right-side-modal .ant-modal) {
+  transform: translateX(100%);
+  animation: slideIn 0.3s forwards;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* 添加滑出动画 */
+:deep(.right-side-modal .ant-modal.zoom-leave) {
+  animation: slideOut 0.3s forwards;
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
 }
 </style> 
