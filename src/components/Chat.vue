@@ -363,9 +363,11 @@ async function pushAIMessage(data) {
 
 .message .content {
   background: #f5f5f5;
-  padding: 12px;
-  border-radius: 8px;
+  padding: 12px 16px;
+  border-radius: 12px;
   max-width: 70%;
+  font-size: 16px;
+  line-height: 1.6;
 }
 
 .message.user {
@@ -393,18 +395,21 @@ async function pushAIMessage(data) {
 
 .chat-input input {
   flex: 1;
-  padding: 10px;
+  padding: 12px 16px;
   border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  border-radius: 8px;
+  font-size: 16px;
 }
 
 .chat-input button {
-  padding: 10px 20px;
+  padding: 12px 24px;
   background: #007aff;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
 }
 
 .chat-input button:hover {
