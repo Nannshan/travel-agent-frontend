@@ -130,10 +130,12 @@ const handlePlanLoad = (planId) => {
   if (planId) {
     currentPlanId.value = planId;
     showTripPlan.value = true;
-    // 使用 nextTick 确保组件已经挂载
-    nextTick(() => {
+    
+    // 使用 nextTick 确保组件已经挂载并且状态已更新
+    nextTick(async () => {
       if (tripPlanRef.value) {
-        tripPlanRef.value.refresh();
+        console.log('刷新行程计划组件，planId:', planId);
+        await tripPlanRef.value.refresh();
       }
     });
   } else {
@@ -144,8 +146,16 @@ const handlePlanLoad = (planId) => {
 
 // 处理准备生成行程
 const handleReadyGenerate = (planId) => {
+  console.log('准备生成新行程，planId:', planId);
   currentPlanId.value = planId;
   showTripPlan.value = true;
+  
+  // 确保新计划也能正确加载
+  nextTick(async () => {
+    if (tripPlanRef.value) {
+      await tripPlanRef.value.refresh();
+    }
+  });
 };
 
 // 添加生命周期钩子

@@ -39,14 +39,11 @@
 <script setup>
 import { computed, ref, watch } from "vue";
 import { Avatar as AAvatar } from "ant-design-vue";
-import { UserOutlined } from "@ant-design/icons-vue";
 import agentAvatar from "@/assets/agent-avatar.svg";
 import {
   createThread,
-  sendInitialMessageStream,
   sendInitialMessageInvoke,
   sendUserMessageInvoke,
-  sendUserMessageStream,
   generateTitle,
 } from "@/api/agent.js";
 import { useUserStore } from "@/stores/user";
@@ -75,7 +72,6 @@ const userAvatarUrl = computed(() => {
   const url = userStore.userInfo.avatar_url;
   if (!url) return "";
 
-  // 移除URL中可能存在的开头的/media
   const cleanUrl = url.startsWith("/media/") ? url.substring(6) : url;
   // 使用API URL访问头像
   return `${baseURL}/media/${cleanUrl}`;
@@ -139,13 +135,13 @@ const loadChatHistory = async (id) => {
 // 创建新聊天
 const createNewChat = async () => {
   try {
-    // 1. 创建OpenAI对话线程
+    // 创建OpenAI对话线程
     const threadResponse = await createThread();
     if (!threadResponse || !threadResponse.thread_id) {
       throw new Error("创建对话线程失败");
     }
 
-    // 2. 创建聊天记录
+    // 创建聊天记录
     const chatData = {
       userid: userStore.userInfo.id,
       messages: JSON.stringify(messages.value),
@@ -258,7 +254,6 @@ const handleSendMessage = async () => {
     }
   } catch (error) {
     console.error("发送消息失败:", error);
-    // 移除"正在思考中..."消息
     messages.value.pop();
     // 添加错误消息
     messages.value.push({
@@ -285,7 +280,7 @@ async function handle_plan(planData) {
       emit("ready-generate", res.data.id);
       emit("load-plan", res.data.id); // 直接触发 load-plan 事件
     } else {
-      throw error; // 其他错误则抛出
+      throw error;
     }
   }
 }
@@ -295,19 +290,37 @@ async function pushAIMessage(data) {
   if (!data) return;
 
   const jsonData = JSON.parse(data);
+  console.log('收到AI响应数据:', jsonData);
 
   // 检查是否为生成行程的数据
   if (jsonData.type === "pre") {
     messages.value[messages.value.length - 1].content = jsonData.res;
     scrollToBottom();
-  } else {
+  } else if (jsonData.type === "feedback" && jsonData.travel_plan) {
     const planData = {
       userid: userStore.userInfo.id,
       chatid: props.chatId,
       travel_plan: JSON.stringify(jsonData.travel_plan),
       threadid: threadId.value,
     };
-    await handle_plan(planData);
+    
+    // 先更新消息显示
+    messages.value[messages.value.length - 1].content = jsonData.res;
+    scrollToBottom();
+    
+    // 然后更新计划
+    try {
+      await handle_plan(planData);
+      console.log('行程计划已更新');
+    } catch (error) {
+      console.error('更新行程计划失败:', error);
+      messages.value.push({
+        id: messages.value.length + 1,
+        type: "agent",
+        content: "抱歉，更新行程计划时出现错误。",
+      });
+    }
+  } else {
     messages.value[messages.value.length - 1].content = jsonData.res || "已为您规划好一场完美的旅行，祝您旅途愉快！";
     scrollToBottom();
   }
@@ -333,7 +346,7 @@ async function pushAIMessage(data) {
   scroll-behavior: smooth;
   position: absolute;
   top: 0;
-  bottom: 80px; /* 留出输入框的高度 */
+  bottom: 80px;
   left: 0;
   right: 0;
 }

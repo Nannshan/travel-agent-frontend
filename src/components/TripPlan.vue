@@ -243,7 +243,7 @@ const cityCenter = ref(null);
 // 添加控制显示/隐藏的状态
 const showOverview = ref(true);
 
-// 添加新的响应式变量
+// 添加响应式变量
 const hoveredDayIndex = ref(-1);
 const morningFoodList = ref([]);
 const afternoonFoodList = ref([]);
@@ -318,25 +318,46 @@ const fetchCityInfo = async (cityName) => {
   }
 };
 
-// 修改 fetchPlanData 函数
+// 监听计划ID变化
+watch(() => props.planId, async (newId, oldId) => {
+  console.log('【TripPlan组件】planId 发生变化:', {
+    旧ID: oldId,
+    新ID: newId
+  });
+  
+  if (newId) {
+    loading.value = true;
+    error.value = null;
+    try {
+      await fetchPlanData();
+    } catch (err) {
+      console.error('【TripPlan组件】获取计划数据失败:', err);
+      error.value = err.message || '获取计划详情失败，请重试';
+    } finally {
+      loading.value = false;
+    }
+  }
+}, { immediate: true });
+
 const fetchPlanData = async () => {
   try {
     loading.value = true;
     error.value = null;
-    console.log('开始获取计划数据，planId:', props.planId);
+    console.log('【TripPlan组件】开始获取计划数据，planId:', props.planId);
     
     const response = await getPlanDetail(props.planId);
-    console.log('获取到的原始数据:', response);
+    console.log('【TripPlan组件】获取到的原始数据:', response);
     
     if (!response || !response.data) {
       throw new Error('未获取到计划数据');
     }
 
+    // 确保 travel_plan 是对象而不是字符串
     if (typeof response.data.travel_plan === 'string') {
       try {
         response.data.travel_plan = JSON.parse(response.data.travel_plan);
       } catch (e) {
-        console.error('解析travel_plan失败:', e);
+        console.error('【TripPlan组件】解析travel_plan失败:', e);
         throw new Error('计划数据格式不正确');
       }
     }
@@ -348,15 +369,34 @@ const fetchPlanData = async () => {
       await fetchCityInfo(planData.value.travel_plan[0].city);
     }
     
-    console.log('处理后的planData:', planData.value);
+    console.log('【TripPlan组件】处理后的planData:', planData.value);
     
   } catch (err) {
-    console.error('获取计划详情失败:', err);
+    console.error('【TripPlan组件】获取计划详情失败:', err);
     error.value = err.message || '获取计划详情失败，请重试';
   } finally {
     loading.value = false;
   }
 };
+
+// 刷新方法
+const refresh = async () => {
+  console.log('【TripPlan组件】执行刷新操作');
+  try {
+    await fetchPlanData();
+    // 如果地图组件存在，也刷新地图
+    if (mapRef.value) {
+      console.log('【TripPlan组件】刷新地图组件');
+      mapRef.value.refreshMarkers();
+    }
+  } catch (error) {
+    console.error('【TripPlan组件】刷新失败:', error);
+  }
+};
+
+defineExpose({
+  refresh
+});
 
 // 监听路由参数变化
 watch(() => route.params.planId, (newId) => {
@@ -375,27 +415,7 @@ watch(() => route.params.planId, (newId) => {
   }
 }, { immediate: true });
 
-// 修改原有的 planId watch
-watch(() => props.planId, (newId) => {
-  console.log('props.planId changed:', newId);
-  if (newId) {
-    // 重置状态
-    planData.value = null;
-    cityInfo.value = null;
-    cityCenter.value = null;
-    morningFoodList.value = [];
-    afternoonFoodList.value = [];
-    currentDay.value = 0;
-    
-    // 重新获取数据
-    fetchPlanData();
-  } else {
-    planData.value = null;
-    error.value = null;
-  }
-}, { immediate: true });
-
-// 添加对 planData 的监听
+// 对 planData 监听
 watch(() => planData.value, (newData) => {
   console.log('planData changed:', newData);
   if (newData?.travel_plan?.[0]?.city) {

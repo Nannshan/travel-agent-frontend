@@ -295,7 +295,7 @@ const addAllSceneMarkers = async () => {
     map.value.setFitView(
       markers.value,
       false,
-      [150, 150, 150, 150],  // 四周留出更大的边距
+      [100, 100, 100, 100],  // 四周留出更大的边距
       13  // 设置最小缩放级别
     );
   }
@@ -313,15 +313,12 @@ const addMarker = async (sceneName, timeSlot, dayIndex) => {
       return createMarker(locationData, timeSlot, dayIndex);
     }
 
-    console.log('【Map组件】正在搜索景点:', sceneName);
-    const response = await searchAccurateScene(sceneName);
-    console.log('【Map组件】搜索结果:', response);
-    
-    if (!response.data?.longitude || !response.data?.latitude) {
+    // 直接使用高德地图的PlaceSearch进行搜索
+    return new Promise((resolve) => {
       console.log(`【Map组件】使用PlaceSearch搜索景点: ${sceneName}`);
-      return new Promise((resolve) => {
+      window.AMap.plugin(['AMap.PlaceSearch'], () => {
         const placeSearch = new window.AMap.PlaceSearch({
-          city: props.planData?.travel_plan?.[0]?.city || '青岛',
+          city: props.planData?.travel_plan?.[0]?.city || '全国',
           citylimit: true,
           pageSize: 1
         });
@@ -344,20 +341,17 @@ const addMarker = async (sceneName, timeSlot, dayIndex) => {
             const marker = createMarker(locationData, timeSlot, dayIndex);
             resolve(marker);
           } else {
-            console.warn(`【Map组件】PlaceSearch未找到景点 ${sceneName}`);
+            console.warn(`【Map组件】未找到景点 ${sceneName} 的位置信息`);
             resolve(null);
           }
         });
       });
-    }
+    });
 
-    // 保存到缓存
-    sceneLocationCache.value.set(sceneName, response.data);
-    return createMarker(response.data, timeSlot, dayIndex);
   } catch (error) {
     console.error(`【Map组件】获取景点 ${sceneName} 位置失败:`, error);
+    return null;
   }
-  return null;
 };
 
 // 创建标记的辅助函数
@@ -376,12 +370,18 @@ const createMarker = (location, timeSlot, dayIndex) => {
     <span class="marker-title">${location.name}</span>
   `;
 
+  // 计算标记的偏移量，根据时段和天数错开位置
+  const baseOffset = -10;
+  const offsetX = timeSlot === '上午' ? baseOffset - (dayIndex * 10) : baseOffset + (dayIndex * 10);
+  const offsetY = timeSlot === '上午' ? baseOffset - (dayIndex * 5) : baseOffset + (dayIndex * 5);
+
   const marker = new window.AMap.Marker({
     position: [location.longitude, location.latitude],
     content: markerContent,
     title: location.name,
     map: map.value,
-    offset: new window.AMap.Pixel(-20, -20)
+    offset: new window.AMap.Pixel(offsetX, offsetY),
+    zIndex: 100 - (dayIndex * 2) - (timeSlot === '下午' ? 1 : 0) // 确保新的标记在上层
   });
 
   let infoWindow = null;
@@ -593,6 +593,13 @@ onUnmounted(() => {
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   cursor: pointer;
   gap: 8px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+:deep(.custom-marker:hover) {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  z-index: 999 !important;
 }
 
 :deep(.day-number) {

@@ -63,8 +63,7 @@ const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const userAvatarUrl = computed(() => {
   const url = userStore.userInfo.avatar_url;
   if (!url) return '';
-  
-  // 移除URL中可能存在的开头的/media
+
   const cleanUrl = url.startsWith('/media/') ? url.substring(6) : url;
   // 使用API URL访问头像
   return `${baseURL}/media/${cleanUrl}`;

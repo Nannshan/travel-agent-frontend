@@ -309,8 +309,7 @@ const sendVerificationCode = async () => {
     loading.value = true
     await sendEmailCode(loginForm.email)
     message.success('验证码已发送')
-    
-    // 开始倒计时
+
     codeCooldown.value = 60
     const timer = setInterval(() => {
       codeCooldown.value--
