@@ -29,7 +29,7 @@ const routes = [
       {
         path: "/user-favorite",
         name: "FavoriteAttractions",
-        component: () => import("@/views/user/SceneStar.vue"),
+        component: () => import("@/views/user/AttractionStar.vue"),
       },
       {
         path: "/user-plan",

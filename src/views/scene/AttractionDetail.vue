@@ -125,7 +125,7 @@ import {
   FireOutlined,
   StarOutlined,
 } from "@ant-design/icons-vue";
-import { getAttractionDetail } from "@/api/scene.js";
+import { getAttractionDetail } from "@/api/attraction.js";
 import { addStar, removeStar, getStars } from "@/api/user.js";
 import { message } from "ant-design-vue";
 import { useUserStore } from "@/stores/user";

@@ -215,7 +215,7 @@
 <script setup>
 import { ref, computed, onMounted, watch, nextTick, onUnmounted } from 'vue';
 import { getPlanDetail } from '@/api/plan.js';
-import { searchAccurateAttraction } from '@/api/scene.js';
+import { searchAccurateAttraction } from '@/api/attraction.js';
 import { getCityDetail, getCityCenterDetail } from '@/api/city.js';
 import { useRouter, useRoute } from 'vue-router';
 import { message } from 'ant-design-vue';
@@ -253,7 +253,7 @@ const mapRef = ref(null);
 // 加载CSV数据
 const loadSceneData = async () => {
   try {
-    const response = await fetch('/docs/scene.csv');
+    const response = await fetch('/docs/attraction.csv');
     const csvText = await response.text();
     const lines = csvText.split('\n');
     

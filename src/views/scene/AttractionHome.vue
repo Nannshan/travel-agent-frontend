@@ -92,7 +92,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { message } from 'ant-design-vue';
 import AttractionCard from '@/components/AttractionCard.vue';
-import { getAttractionList, searchAttraction } from '@/api/scene.js';
+import { getAttractionList, searchAttraction } from '@/api/attraction.js';
 
 const formRef = ref();
 const attractions = ref([]);

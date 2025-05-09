@@ -6,7 +6,7 @@
 
 <script setup>
 import { ref, onMounted, watch, nextTick, onUnmounted } from 'vue';
-import { searchAccurateAttraction } from '@/api/scene.js';
+import { searchAccurateAttraction } from '@/api/attraction.js';
 
 const props = defineProps({
   planData: {

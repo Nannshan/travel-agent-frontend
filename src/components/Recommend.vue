@@ -30,7 +30,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { getAttractionDetail } from '@/api/scene.js';
+import { getAttractionDetail } from '@/api/attraction.js';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
