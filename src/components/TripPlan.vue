@@ -60,13 +60,13 @@
                     <div class="timeline-attractions">
                       <div v-if="day.itinerary.morning.attraction" class="timeline-attraction">
                         <span class="time-label">上午</span>
-                        <span class="attraction" @click="handleSceneClick(day.itinerary.morning.attraction)">
+                        <span class="attraction" @click="handleAttractionClick(day.itinerary.morning.attraction)">
                           {{ day.itinerary.morning.attraction }}
                         </span>
                       </div>
                       <div v-if="day.itinerary.afternoon.attraction" class="timeline-attraction">
                         <span class="time-label">下午</span>
-                        <span class="attraction" @click="handleSceneClick(day.itinerary.afternoon.attraction)">
+                        <span class="attraction" @click="handleAttractionClick(day.itinerary.afternoon.attraction)">
                           {{ day.itinerary.afternoon.attraction }}
                         </span>
                       </div>
@@ -125,7 +125,7 @@
                 <div class="activity-header">
                   <h5 
                     class="attraction-link"
-                    @click="handleSceneClick(currentDayPlan.itinerary.morning.attraction)"
+                    @click="handleAttractionClick(currentDayPlan.itinerary.morning.attraction)"
                   >
                     {{ currentDayPlan.itinerary.morning.attraction }}
                   </h5>
@@ -166,7 +166,7 @@
                 <div class="activity-header">
                   <h5 
                     class="attraction-link"
-                    @click="handleSceneClick(currentDayPlan.itinerary.afternoon.attraction)"
+                    @click="handleAttractionClick(currentDayPlan.itinerary.afternoon.attraction)"
                   >
                     {{ currentDayPlan.itinerary.afternoon.attraction }}
                   </h5>
@@ -215,7 +215,7 @@
 <script setup>
 import { ref, computed, onMounted, watch, nextTick, onUnmounted } from 'vue';
 import { getPlanDetail } from '@/api/plan.js';
-import { searchAccurateScene } from '@/api/scene.js';
+import { searchAccurateAttraction } from '@/api/scene.js';
 import { getCityDetail, getCityCenterDetail } from '@/api/city.js';
 import { useRouter, useRoute } from 'vue-router';
 import { message } from 'ant-design-vue';
@@ -270,6 +270,46 @@ const loadSceneData = async () => {
     }
   } catch (err) {
     console.error('加载景点数据失败:', err);
+  }
+};
+
+const fetchPlanData = async () => {
+  try {
+    loading.value = true;
+    error.value = null;
+    console.log('【TripPlan组件】开始获取计划数据，planId:', props.planId);
+    
+    const response = await getPlanDetail(props.planId);
+    console.log('【TripPlan组件】获取到的原始数据:', response);
+    
+    if (!response || !response.data) {
+      throw new Error('未获取到计划数据');
+    }
+
+    // 确保 travel_plan 是对象而不是字符串
+    if (typeof response.data.travel_plan === 'string') {
+      try {
+        response.data.travel_plan = JSON.parse(response.data.travel_plan);
+      } catch (e) {
+        console.error('【TripPlan组件】解析travel_plan失败:', e);
+        throw new Error('计划数据格式不正确');
+      }
+    }
+    
+    planData.value = response.data;
+    
+    // 获取城市信息
+    if (planData.value?.travel_plan?.[0]?.city) {
+      await fetchCityInfo(planData.value.travel_plan[0].city);
+    }
+    
+    console.log('【TripPlan组件】处理后的planData:', planData.value);
+    
+  } catch (err) {
+    console.error('【TripPlan组件】获取计划详情失败:', err);
+    error.value = err.message || '获取计划详情失败，请重试';
+  } finally {
+    loading.value = false;
   }
 };
 
@@ -339,65 +379,6 @@ watch(() => props.planId, async (newId, oldId) => {
   }
 }, { immediate: true });
 
-const fetchPlanData = async () => {
-  try {
-    loading.value = true;
-    error.value = null;
-    console.log('【TripPlan组件】开始获取计划数据，planId:', props.planId);
-    
-    const response = await getPlanDetail(props.planId);
-    console.log('【TripPlan组件】获取到的原始数据:', response);
-    
-    if (!response || !response.data) {
-      throw new Error('未获取到计划数据');
-    }
-
-    // 确保 travel_plan 是对象而不是字符串
-    if (typeof response.data.travel_plan === 'string') {
-      try {
-        response.data.travel_plan = JSON.parse(response.data.travel_plan);
-      } catch (e) {
-        console.error('【TripPlan组件】解析travel_plan失败:', e);
-        throw new Error('计划数据格式不正确');
-      }
-    }
-    
-    planData.value = response.data;
-    
-    // 获取城市信息
-    if (planData.value?.travel_plan?.[0]?.city) {
-      await fetchCityInfo(planData.value.travel_plan[0].city);
-    }
-    
-    console.log('【TripPlan组件】处理后的planData:', planData.value);
-    
-  } catch (err) {
-    console.error('【TripPlan组件】获取计划详情失败:', err);
-    error.value = err.message || '获取计划详情失败，请重试';
-  } finally {
-    loading.value = false;
-  }
-};
-
-// 刷新方法
-const refresh = async () => {
-  console.log('【TripPlan组件】执行刷新操作');
-  try {
-    await fetchPlanData();
-    // 如果地图组件存在，也刷新地图
-    if (mapRef.value) {
-      console.log('【TripPlan组件】刷新地图组件');
-      mapRef.value.refreshMarkers();
-    }
-  } catch (error) {
-    console.error('【TripPlan组件】刷新失败:', error);
-  }
-};
-
-defineExpose({
-  refresh
-});
-
 // 监听路由参数变化
 watch(() => route.params.planId, (newId) => {
   console.log('路由参数变化，新的planId:', newId);
@@ -435,35 +416,35 @@ const formatShortDate = (dateStr) => {
   return `${date.getMonth() + 1}/${date.getDate()}`;
 };
 
-const handleSceneClick = async (sceneName) => {
-  try {
-    // 首先尝试使用API搜索
-    const response = await searchAccurateScene(sceneName);
-    if (response.data && response.data.id) {
-      router.push({
-        name: 'SceneDetail',
-        params: { id: response.data.id }
-      });
-    } else {
-      // 如果API搜索失败，尝试从本地数据中查找
+const handleAttractionClick = async (attractionName) => {
+    try {
+      // 首先尝试使用API搜索
+      const response = await searchAccurateAttraction(attractionName);
+      if (response.data && response.data.id) {
+        router.push({
+          name: 'AttractionDetail',
+          params: { id: response.data.id }
+        });
+      } else {
+        // 如果API搜索失败，尝试从本地数据中查找
+        const sceneUrl = sceneUrlMap.value[attractionName];
+        if (sceneUrl) {
+          // 如果找到URL，直接跳转到携程页面
+          window.open(sceneUrl, '_blank');
+        } else {
+          message.warning('未找到对应景点信息');
+        }
+      }
+    } catch (error) {
+      console.error('搜索景点失败:', error);
+      // API调用失败时，尝试从本地数据中查找
       const sceneUrl = sceneUrlMap.value[sceneName];
       if (sceneUrl) {
-        // 如果找到URL，直接跳转到携程页面
         window.open(sceneUrl, '_blank');
       } else {
-        message.warning('未找到对应景点信息');
+        message.error('获取景点信息失败');
       }
     }
-  } catch (error) {
-    console.error('搜索景点失败:', error);
-    // API调用失败时，尝试从本地数据中查找
-    const sceneUrl = sceneUrlMap.value[sceneName];
-    if (sceneUrl) {
-      window.open(sceneUrl, '_blank');
-    } else {
-      message.error('获取景点信息失败');
-    }
-  }
 };
 
 // 数字转中文

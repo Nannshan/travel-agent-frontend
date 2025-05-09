@@ -1,30 +1,30 @@
 <template>
-  <div class="scene-detail">
+  <div class="attraction-detail">
     <div class="main-content">
       <!-- 基本信息 -->
       <div class="basic-info">
         <div class="header-section">
           <a-button
-            :type="isStarred ? 'primary' : 'default'"
+            :type="isFavorited ? 'primary' : 'default'"
             shape="circle"
-            class="star-btn"
-            @click="handleStarClick"
-            :loading="starLoading"
+            class="favorite-btn"
+            @click="handleFavoriteClick"
+            :loading="favoriteLoading"
           >
             <template #icon><star-outlined /></template>
           </a-button>
           <div class="title-section">
             <div class="title-wrapper">
-              <h1>{{ sceneData.name }}</h1>
+              <h1>{{ attractionData.name }}</h1>
             </div>
             <div class="score-section">
-              <a-rate :value="Number(sceneData.score)" disabled allow-half />
-              <span class="score">{{ sceneData.score }}分</span>
+              <a-rate :value="Number(attractionData.score)" disabled allow-half />
+              <span class="score">{{ attractionData.score }}分</span>
             </div>
           </div>
           <div class="location-tags">
-            <a-tag color="blue">{{ sceneData.province }}</a-tag>
-            <a-tag color="green">{{ sceneData.city }}</a-tag>
+            <a-tag color="blue">{{ attractionData.province }}</a-tag>
+            <a-tag color="green">{{ attractionData.city }}</a-tag>
           </div>
         </div>
 
@@ -34,7 +34,7 @@
               <environment-outlined />
               <span>地址：</span>
             </div>
-            <div class="info-content">{{ sceneData.address }}</div>
+            <div class="info-content">{{ attractionData.address }}</div>
           </div>
           <div class="info-item">
             <div class="info-label">
@@ -42,7 +42,7 @@
               <span>门票：</span>
             </div>
             <div class="info-content">
-              {{ sceneData.price ? `￥${sceneData.price}` : "免费" }}
+              {{ attractionData.price ? `￥${attractionData.price}` : "免费" }}
             </div>
           </div>
           <div class="info-item">
@@ -50,7 +50,7 @@
               <fire-outlined />
               <span>评论数：</span>
             </div>
-            <div class="info-content">{{ sceneData.comment_num }} 条点评</div>
+            <div class="info-content">{{ attractionData.comment_num }} 条点评</div>
           </div>
         </div>
       </div>
@@ -73,14 +73,13 @@
             :key="index"
             class="carousel-slide"
           >
-            <img :src="img" :alt="sceneData.name" />
+            <img :src="img" :alt="attractionData.name" />
           </div>
         </a-carousel>
       </div>
     </div>
 
     <div class="content-wrapper">
-
       <!-- 标签 -->
       <div class="tags-section">
         <h3>标签</h3>
@@ -95,7 +94,7 @@
       <div class="open-time-section">
         <h3>开放时间</h3>
         <a-typography-paragraph>
-          {{ sceneData.time }}
+          {{ attractionData.time }}
         </a-typography-paragraph>
       </div>
 
@@ -103,7 +102,7 @@
       <div class="features-section">
         <h3>景点特色</h3>
         <a-typography-paragraph>
-          {{ sceneData.features }}
+          {{ attractionData.features }}
         </a-typography-paragraph>
       </div>
 
@@ -111,7 +110,7 @@
       <div class="description-section">
         <h3>详细介绍</h3>
         <a-typography-paragraph>
-          {{ sceneData.description }}
+          {{ attractionData.description }}
         </a-typography-paragraph>
       </div>
     </div>
@@ -126,19 +125,19 @@ import {
   FireOutlined,
   StarOutlined,
 } from "@ant-design/icons-vue";
-import { getSceneDetail } from "@/api/scene.js";
+import { getAttractionDetail } from "@/api/scene.js";
 import { addStar, removeStar, getStars } from "@/api/user.js";
 import { message } from "ant-design-vue";
 import { useUserStore } from "@/stores/user";
 
 const userStore = useUserStore();
-const isStarred = ref(false);
-const starLoading = ref(false);
+const isFavorited = ref(false);
+const favoriteLoading = ref(false);
 
-const sceneData = ref({
+const attractionData = ref({
   id: 1,
   name: "",
-  sceneurl: "",
+  url: "",
   address: "",
   comment_num: 0,
   score: "0",
@@ -161,66 +160,69 @@ const props = defineProps({
   },
 });
 
-const checkIfStarred = async () => {
+const checkIfFavorited = async () => {
   try {
     if (!userStore.isLoggedIn) return;
     const res = await getStars(userStore.id);
-    const starList = res.data || [];
-    isStarred.value = starList.some(item => item.id === Number(props.id));
+    const favoriteList = res.data || [];
+    isFavorited.value = favoriteList.some(item => item.id === Number(props.id));
   } catch (error) {
     console.error("检查收藏状态失败:", error);
   }
 };
 
-const handleStarClick = async () => {
+const handleFavoriteClick = async () => {
   if (!userStore.isLoggedIn) {
     message.warning("请先登录后再收藏");
     return;
   }
 
   try {
-    starLoading.value = true;
-    if (isStarred.value) {
-      await removeStar(userStore.id, props.id);
+    favoriteLoading.value = true;
+    if (isFavorited.value) {
+      await removeStar(userStore.id, Number(props.id));
       message.success("取消收藏成功");
-      isStarred.value = false;
+      isFavorited.value = false;
     } else {
-      await addStar({ userId: userStore.id, sceneId: props.id });
+      await addStar({ 
+        userId: userStore.id, 
+        attractionid: Number(props.id)  
+      });
       message.success("收藏成功");
-      isStarred.value = true;
+      isFavorited.value = true;
     }
   } catch (error) {
     message.error("操作失败，请稍后重试");
     console.error("收藏操作失败:", error);
   } finally {
-    starLoading.value = false;
+    favoriteLoading.value = false;
   }
 };
 
 onMounted(async () => {
   try {
     // 调用 API 获取数据
-    const res = await getSceneDetail(props.id);
-    sceneData.value = res.data;
+    const res = await getAttractionDetail(props.id);
+    attractionData.value = res.data;
 
     // 处理图片列表
-    if (sceneData.value.imgurl) {
-      imageList.value = sceneData.value.imgurl.split(";");
+    if (attractionData.value.imgurl) {
+      imageList.value = attractionData.value.imgurl.split(";");
     }
     // 处理标签列表
-    if (sceneData.value.tags) {
+    if (attractionData.value.tags) {
       try {
-        tagsList.value = JSON.parse(sceneData.value.tags);
+        tagsList.value = JSON.parse(attractionData.value.tags);
       } catch (e) {
         console.error("解析标签失败:", e);
         tagsList.value = [];
       }
     }
     // 处理特色列表
-    if (sceneData.value.features) {
+    if (attractionData.value.features) {
       try {
-        const featuresArray = JSON.parse(sceneData.value.features);
-        sceneData.value.features = Array.isArray(featuresArray)
+        const featuresArray = JSON.parse(attractionData.value.features);
+        attractionData.value.features = Array.isArray(featuresArray)
           ? featuresArray.join("\n")
           : featuresArray;
       } catch (e) {
@@ -229,7 +231,7 @@ onMounted(async () => {
     }
 
     // 检查是否已收藏
-    await checkIfStarred();
+    await checkIfFavorited();
   } catch (error) {
     console.error("获取景点详情失败:", error);
   }
@@ -241,7 +243,7 @@ const onChange = (current) => {
 </script>
 
 <style scoped>
-.scene-detail {
+.attraction-detail {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
@@ -350,12 +352,6 @@ const onChange = (current) => {
   line-height: 1.2;
 }
 
-.score-section {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .score {
   color: #faad14;
   font-size: 16px;
@@ -421,7 +417,7 @@ h3 {
 }
 
 /* 添加收藏按钮样式 */
-.star-btn {
+.favorite-btn {
   position: absolute;
   top: 0;
   right: 0;

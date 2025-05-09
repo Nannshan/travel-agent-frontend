@@ -30,7 +30,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { getSceneDetail } from '@/api/scene.js';
+import { getAttractionDetail } from '@/api/scene.js';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
@@ -44,7 +44,7 @@ const cleanFeatureText = (feature) => {
 };
 
 const handleItemClick = (id) => {
-  router.push(`/scene-detail/${id}`);
+  router.push(`/attraction-detail/${id}`);
 };
 
 // 生成1-6210之间的随机ID
@@ -63,7 +63,7 @@ const fetchRecommendations = async () => {
     const selectedIds = getRandomIds(6);
     
     // 并行获取所有选中ID的详情
-    const detailPromises = selectedIds.map(id => getSceneDetail(id));
+    const detailPromises = selectedIds.map(id => getAttractionDetail(id));
     const results = await Promise.all(detailPromises);
     
     // 过滤掉无效数据并确保有足够的数据

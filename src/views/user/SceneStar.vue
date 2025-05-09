@@ -1,10 +1,10 @@
 <template>
-  <div id="SceneStar" class="scene-star-container">
+  <div id="FavoriteAttractions" class="favorite-attractions-container">
     <a-page-header title="我的收藏景点" class="page-header" :ghost="true">
       <template #extra>
         <a-button
           type="text"
-          @click="$router.push('/scene-home')"
+          @click="$router.push('/attraction-home')"
           class="browse-btn"
         >
           <template #icon>
@@ -18,7 +18,7 @@
     <div class="content-wrapper">
       <a-spin :spinning="loading" tip="加载中...">
         <a-empty
-          v-if="!loading && stars.length === 0"
+          v-if="!loading && favorites.length === 0"
           description="您还没有收藏任何景点"
           class="custom-empty"
         >
@@ -30,7 +30,7 @@
           </template>
           <a-button
             type="text"
-            @click="$router.push('/scene-home')"
+            @click="$router.push('/attraction-home')"
             class="browse-btn"
           >
             立即浏览
@@ -43,16 +43,16 @@
             :sm="12"
             :md="8"
             :lg="6"
-            v-for="star in stars"
-            :key="star.id"
+            v-for="favorite in favorites"
+            :key="favorite.id"
           >
-            <scene-card :scene="star">
+            <attraction-card :attraction="favorite">
               <template #actions>
                 <a-popconfirm
                   title="确定要取消收藏这个景点吗？"
                   ok-text="确定"
                   cancel-text="取消"
-                  @confirm="remove(star.id)"
+                  @confirm="remove(favorite.id)"
                 >
                   <a-button type="text" class="remove-btn">
                     <DeleteOutlined />
@@ -60,7 +60,7 @@
                   </a-button>
                 </a-popconfirm>
               </template>
-            </scene-card>
+            </attraction-card>
           </a-col>
         </a-row>
       </a-spin>
@@ -70,20 +70,22 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-import { getStars, removeStar } from "@/api/user.js";
+import { useRouter } from "vue-router";
+import { getStars, removeStar, addStar } from "@/api/user.js";
 import { SearchOutlined, DeleteOutlined } from "@ant-design/icons-vue";
 import { message } from "ant-design-vue";
-import SceneCard from "@/components/SceneCard.vue";
+import { useUserStore } from "@/stores/user";
+import AttractionCard from "@/components/AttractionCard.vue";
 
-const stars = ref([]);
+const favorites = ref([]);
 const loading = ref(true);
+const userStore = useUserStore();
 
-const fetchStars = async () => {
+const fetchFavorites = async () => {
   try {
     loading.value = true;
-    const userid = 1;
-    const response = await getStars(userid);
-    stars.value = response.data;
+    const response = await getStars(userStore.id);
+    favorites.value = response.data;
   } catch (error) {
     message.error("获取收藏景点失败");
     console.error("获取收藏景点失败:", error);
@@ -92,11 +94,10 @@ const fetchStars = async () => {
   }
 };
 
-const remove = async (starId) => {
+const remove = async (favoriteId) => {
   try {
-    const userid = 1;
-    await removeStar(userid, starId);
-    stars.value = stars.value.filter((star) => star.id !== starId);
+    await removeStar(userStore.id, favoriteId);
+    favorites.value = favorites.value.filter((favorite) => favorite.id !== favoriteId);
     message.success("取消收藏成功");
   } catch (error) {
     message.error("取消收藏失败");
@@ -105,12 +106,12 @@ const remove = async (starId) => {
 };
 
 onMounted(() => {
-  fetchStars();
+  fetchFavorites();
 });
 </script>
 
 <style scoped>
-.scene-star-container {
+.favorite-attractions-container {
   height: 100vh; /* 减去顶部导航栏的高度 */
   display: flex;
   flex-direction: column;

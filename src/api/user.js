@@ -39,21 +39,21 @@ export function deleteUser(Id) {
     return myAxios.delete(`/api/UserManagement/userDetail/${Id}`);
 }
 
-// 获取收藏的景点列表
-export function getStars(Id) {
-    return myAxios.get(`/api/UserManagement/starList/${Id}`);
+// 获取用户收藏列表
+export function getStars(userId) {
+    return myAxios.get(`/api/UserManagement/favoriteList/${userId}`);
 }
 
-// 取消收藏景点
-export function removeStar(userId, sceneId) {
-    return myAxios.delete(`/api/UserManagement/starRemove/${userId}/${sceneId}`);
+// 取消收藏
+export function removeStar(userId, attractionId) {
+    return myAxios.delete(`/api/UserManagement/favoriteRemove/${userId}/${attractionId}`);
 }
 
-// 添加景点到收藏
+// 添加收藏
 export function addStar(data) {
-    return myAxios.post(`/api/UserManagement/starList/${data.userId}`, {
+    return myAxios.post(`/api/UserManagement/favoriteList/${data.userId}`, {
         userid: data.userId,
-        sceneid: data.sceneId
+        attractionid: data.attractionid
     });
 }
 

@@ -29,11 +29,11 @@
             <comment-outlined style="font-size: 20px" />
             <span>旅行规划</span>
           </a-menu-item>
-          <a-menu-item key="/scene-home">
+          <a-menu-item key="/attraction-home">
             <search-outlined style="font-size: 20px" />
             <span>景点广场</span>
           </a-menu-item>
-          <a-menu-item key="/user-star">
+          <a-menu-item key="/user-favorite">
             <star-outlined style="font-size: 20px" />
             <span>我的景点</span>
           </a-menu-item>

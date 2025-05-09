@@ -1,5 +1,5 @@
 <template>
-  <div class="scene-home">
+  <div class="attraction-home">
     <div class="filters">
       <div class="filter-container">
         <a-form layout="inline" :model="filterForm" :rules="rules" ref="formRef">
@@ -49,7 +49,7 @@
     <a-spin :spinning="loading">
       <div class="content-wrapper">
         <a-empty
-          v-if="!loading && filteredScenes.length === 0"
+          v-if="!loading && filteredAttractions.length === 0"
           :description="getEmptyDescription"
           class="custom-empty"
         >
@@ -64,16 +64,16 @@
               :sm="12"
               :md="8"
               :lg="6"
-              v-for="scene in currentPageScenes"
-              :key="scene.id"
+              v-for="attraction in currentPageAttractions"
+              :key="attraction.id"
             >
-              <scene-card :scene="scene" />
+              <attraction-card :attraction="attraction" />
             </a-col>
           </a-row>
           <div class="pagination-wrapper">
             <a-pagination
               v-model:current="currentPage"
-              :total="filteredScenes.length"
+              :total="filteredAttractions.length"
               :pageSize="pageSize"
               show-total
               show-size-changer
@@ -91,11 +91,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { message } from 'ant-design-vue';
-import SceneCard from '@/components/SceneCard.vue';
-import { getSceneList, searchScene } from '@/api/scene.js';
+import AttractionCard from '@/components/AttractionCard.vue';
+import { getAttractionList, searchAttraction } from '@/api/scene.js';
 
 const formRef = ref();
-const scenes = ref([]);
+const attractions = ref([]);
 const loading = ref(false);
 const searchKeyword = ref('');
 const searchResults = ref([]);
@@ -115,11 +115,11 @@ const provinces = computed(() => CHINA_PROVINCES);
 
 const cities = computed(() => {
   if (!filterForm.value.province) return [];
-  const allScenes = [...scenes.value, ...searchResults.value];
+  const allAttractions = [...attractions.value, ...searchResults.value];
   return [...new Set(
-    allScenes
-      .filter(scene => scene.province === filterForm.value.province)
-      .map(scene => scene.city)
+    allAttractions
+      .filter(attraction => attraction.province === filterForm.value.province)
+      .map(attraction => attraction.city)
   )].sort();
 });
 
@@ -157,7 +157,8 @@ const handleKeywordSearch = async () => {
 
   loading.value = true;
   try {
-    const response = await searchScene(searchKeyword.value);
+    const response = await searchAttraction(searchKeyword.value);
+    // 直接使用搜索结果，不进行筛选
     searchResults.value = response.data;
     currentPage.value = 1; // 重置到第一页
   } catch (error) {
@@ -188,23 +189,26 @@ const getEmptyDescription = computed(() => {
   return '暂无符合条件的景点';
 });
 
-// 过滤后的场景列表
-const filteredScenes = computed(() => {
-  const allScenes = searchKeyword.value ? searchResults.value : scenes.value;
+// 过滤后的景点列表
+const filteredAttractions = computed(() => {
+  // 如果有搜索关键词，直接返回搜索结果，不受筛选限制
+  if (searchKeyword.value) {
+    return searchResults.value;
+  }
   
   // 如果没有任何筛选条件，直接返回空数组
-  if (!searchKeyword.value && !filterForm.value.province && !filterForm.value.city) {
+  if (!filterForm.value.province && !filterForm.value.city) {
     return [];
   }
   
-  return allScenes.filter(scene => {
+  return attractions.value.filter(attraction => {
     // 如果有省份筛选，检查省份匹配
-    if (filterForm.value.province && scene.province !== filterForm.value.province) {
+    if (filterForm.value.province && attraction.province !== filterForm.value.province) {
       return false;
     }
     
     // 如果有城市筛选，检查城市匹配
-    if (filterForm.value.city && scene.city !== filterForm.value.city) {
+    if (filterForm.value.city && attraction.city !== filterForm.value.city) {
       return false;
     }
     
@@ -212,11 +216,11 @@ const filteredScenes = computed(() => {
   });
 });
 
-// 当前页显示的场景列表
-const currentPageScenes = computed(() => {
+// 当前页显示的景点列表
+const currentPageAttractions = computed(() => {
   const startIndex = (currentPage.value - 1) * pageSize.value;
   const endIndex = startIndex + pageSize.value;
-  return filteredScenes.value.slice(startIndex, endIndex);
+  return filteredAttractions.value.slice(startIndex, endIndex);
 });
 
 const handleSearch = async () => {
@@ -227,8 +231,8 @@ const handleSearch = async () => {
 
   loading.value = true;
   try {
-    const response = await getSceneList();
-    scenes.value = response.data;
+    const response = await getAttractionList();
+    attractions.value = response.data;
     searchResults.value = []; // 清空搜索结果
     currentPage.value = 1; // 重置到第一页
   } catch (error) {
@@ -254,7 +258,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.scene-home {
+.attraction-home {
   padding: 24px;
 }
 

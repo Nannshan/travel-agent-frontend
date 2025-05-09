@@ -1,41 +1,41 @@
 <template>
   <a-card
     hoverable
-    class="scene-card"
+    class="attraction-card"
     :bordered="false"
     @click="handleCardClick"
   >
     <template #cover>
       <div class="image-wrapper">
-        <img :alt="scene.name" :src="scene.imgurl.split(';')[0]" />
+        <img :alt="attraction.name" :src="attraction.imgurl.split(';')[0]" />
         <div class="image-overlay"></div>
       </div>
     </template>
     <template #title>
-      <div class="card-title">{{ scene.name }}</div>
+      <div class="card-title">{{ attraction.name }}</div>
     </template>
     <a-card-meta>
       <template #description>
-        <div class="scene-description">{{ scene.description }}</div>
-        <div class="scene-meta">
+        <div class="attraction-description">{{ attraction.description }}</div>
+        <div class="attraction-meta">
           <a-space>
             <a-tag :color="null" class="custom-tag">
               <EnvironmentOutlined />
-              {{ scene.city }}
+              {{ attraction.city }}
             </a-tag>
             <a-tag :color="null" class="custom-tag">
               <StarOutlined />
-              {{ scene.score }}
+              {{ attraction.score }}
             </a-tag>
-            <a-tag v-if="scene.price" :color="null" class="custom-tag">
+            <a-tag v-if="attraction.price" :color="null" class="custom-tag">
               <ShoppingOutlined />
-              ¥{{ scene.price }}
+              ¥{{ attraction.price }}
             </a-tag>
           </a-space>
         </div>
-        <div class="scene-address">
+        <div class="attraction-address">
           <EnvironmentOutlined />
-          {{ scene.address }}
+          {{ attraction.address }}
         </div>
       </template>
     </a-card-meta>
@@ -55,26 +55,26 @@ import { useRouter } from "vue-router";
 
 const router = useRouter();
 const props = defineProps({
-  scene: {
+  attraction: {
     type: Object,
     required: true,
   },
 });
 
 const handleCardClick = () => {
-  router.push(`/scene-detail/${props.scene.id}`);
+  router.push(`/attraction-detail/${props.attraction.id}`);
 };
 </script>
 
 <style scoped>
-.scene-card {
+.attraction-card {
   height: 100%;
   background: #fff;
   transition: all 0.3s;
   border: 1px solid #f0f0f0;
 }
 
-.scene-card:hover {
+.attraction-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
@@ -107,11 +107,11 @@ const handleCardClick = () => {
   transition: opacity 0.3s;
 }
 
-.scene-card:hover .image-wrapper img {
+.attraction-card:hover .image-wrapper img {
   transform: scale(1.05);
 }
 
-.scene-card:hover .image-overlay {
+.attraction-card:hover .image-overlay {
   opacity: 1;
 }
 
@@ -122,7 +122,7 @@ const handleCardClick = () => {
   margin-bottom: 8px;
 }
 
-.scene-description {
+.attraction-description {
   color: #666;
   margin-bottom: 12px;
   display: -webkit-box;
@@ -133,12 +133,12 @@ const handleCardClick = () => {
   font-size: 13px;
 }
 
-.scene-meta {
+.attraction-meta {
   margin-top: 12px;
   margin-bottom: 8px;
 }
 
-.scene-address {
+.attraction-address {
   color: #999;
   font-size: 12px;
   display: flex;
@@ -146,7 +146,7 @@ const handleCardClick = () => {
   gap: 4px;
 }
 
-.scene-address :deep(.anticon) {
+.attraction-address :deep(.anticon) {
   font-size: 12px;
 }
 

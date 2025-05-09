@@ -6,7 +6,7 @@
 
 <script setup>
 import { ref, onMounted, watch, nextTick, onUnmounted } from 'vue';
-import { searchAccurateScene } from '@/api/scene.js';
+import { searchAccurateAttraction } from '@/api/scene.js';
 
 const props = defineProps({
   planData: {
@@ -253,7 +253,7 @@ const initMap = () => {
       }));
 
       // 添加所有景点标记
-      addAllSceneMarkers();
+      addAllAttractionMarkers();
     });
   } catch (error) {
     console.error('初始化地图失败:', error);
@@ -261,7 +261,7 @@ const initMap = () => {
 };
 
 // 添加所有景点标记
-const addAllSceneMarkers = async () => {
+const addAllAttractionMarkers = async () => {
   if (!map.value || !props.planData?.travel_plan) return;
 
   console.log('开始添加景点标记...');
@@ -494,7 +494,7 @@ watch(() => props.highlightDayIndex, (newIndex) => {
 watch(() => props.planData, () => {
   nextTick(() => {
     if (map.value) {
-      addAllSceneMarkers();
+      addAllAttractionMarkers();
     }
   });
 }, { deep: true });
@@ -521,7 +521,7 @@ onMounted(() => {
 defineExpose({
   refreshMarkers: () => {
     if (map.value) {
-      addAllSceneMarkers();
+      addAllAttractionMarkers();
     }
   },
   destroy: () => {

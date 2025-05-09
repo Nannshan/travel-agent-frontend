@@ -120,6 +120,28 @@
                   </template>
                 </a-input>
               </a-form-item>
+              <a-form-item name="verificationCode">
+                <div class="verification-code-container">
+                  <a-input
+                    v-model:value="registerForm.verificationCode"
+                    placeholder="请输入验证码"
+                    size="large"
+                    class="verification-input"
+                  >
+                    <template #prefix>
+                      <SafetyOutlined class="input-icon" />
+                    </template>
+                  </a-input>
+                  <a-button
+                    :disabled="registerCodeCooldown > 0"
+                    @click="sendRegisterVerificationCode"
+                    class="send-code-btn"
+                    size="large"
+                  >
+                    {{ registerCodeCooldown > 0 ? `${registerCodeCooldown}秒后重试` : '发送验证码' }}
+                  </a-button>
+                </div>
+              </a-form-item>
               <a-form-item name="nickname">
                 <a-input
                   v-model:value="registerForm.nickname"
@@ -198,6 +220,7 @@ const registerFormRef = ref()
 const rememberMe = ref(false)
 const loginType = ref('password') // 登录方式：password/code
 const codeCooldown = ref(0) // 验证码冷却时间
+const registerCodeCooldown = ref(0) // 注册验证码冷却时间
 
 // 根据URL参数设置默认标签
 onMounted(() => {
@@ -221,7 +244,8 @@ const registerForm = reactive({
   email: '',
   nickname: '',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
+  verificationCode: ''
 })
 
 // 页面加载时检查是否有保存的登录信息
@@ -279,6 +303,10 @@ const registerRules = {
     { required: true, message: '请输入邮箱' },
     { validator: validateEmail }
   ],
+  verificationCode: [
+    { required: true, message: '请输入验证码' },
+    { len: 6, message: '验证码长度应为6位' }
+  ],
   nickname: [
     { required: true, message: '请输入昵称' },
     { min: 2, max: 20, message: '昵称长度在 2 到 20 个字符' }
@@ -314,6 +342,30 @@ const sendVerificationCode = async () => {
     const timer = setInterval(() => {
       codeCooldown.value--
       if (codeCooldown.value <= 0) {
+        clearInterval(timer)
+      }
+    }, 1000)
+  } catch (error) {
+    message.error(error.message || '验证码发送失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 发送注册验证码
+const sendRegisterVerificationCode = async () => {
+  try {
+    // 验证邮箱格式
+    await registerFormRef.value.validateFields(['email'])
+    
+    loading.value = true
+    await sendEmailCode(registerForm.email)
+    message.success('验证码已发送')
+
+    registerCodeCooldown.value = 60
+    const timer = setInterval(() => {
+      registerCodeCooldown.value--
+      if (registerCodeCooldown.value <= 0) {
         clearInterval(timer)
       }
     }, 1000)
@@ -374,7 +426,8 @@ const handleRegister = async (values) => {
     const res = await signup({
       email: values.email,
       nickname: values.nickname,
-      password: values.password
+      password: values.password,
+      code: values.verificationCode // 添加验证码
     })
 
     if (res.status === 201) {

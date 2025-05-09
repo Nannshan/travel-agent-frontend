@@ -27,8 +27,8 @@ const routes = [
     children: [
       //   用户相关
       {
-        path: "/user-star",
-        name: "SceneStar",
+        path: "/user-favorite",
+        name: "FavoriteAttractions",
         component: () => import("@/views/user/SceneStar.vue"),
       },
       {
@@ -54,15 +54,15 @@ const routes = [
       },
       //   景点相关
       {
-        path: "/scene-home",
-        name: "SceneHome",
-        component: () => import("@/views/scene/SceneHome.vue"),
+        path: '/attraction-home',
+        name: 'AttractionHome',
+        component: () => import('@/views/scene/AttractionHome.vue'),
         props: true,
       },
       {
-        path: "/scene-detail/:id",
-        name: "SceneDetail",
-        component: () => import("@/views/scene/SceneDetail.vue"),
+        path: '/attraction-detail/:id',
+        name: 'AttractionDetail',
+        component: () => import('@/views/scene/AttractionDetail.vue'),
         props: true,
       },
       //  Agent相关
