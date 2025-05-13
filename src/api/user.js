@@ -58,9 +58,9 @@ export function addStar(data) {
 }
 
 // 发送邮箱验证码
-export function sendEmailCode(email) {
+export function sendEmailCode(email, type) {
   return myAxios.post("/api/UserManagement/sendEmailCode", {
     email: email,
-    type: "login" // 用途：登录验证
+    type: type // 用途：登录验证
   });
 }

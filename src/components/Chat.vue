@@ -296,7 +296,7 @@ async function pushAIMessage(data) {
   if (jsonData.type === "pre") {
     messages.value[messages.value.length - 1].content = jsonData.res;
     scrollToBottom();
-  } else if (jsonData.type === "feedback" && jsonData.travel_plan) {
+  } else if ((jsonData.type === "feedback" || jsonData.type === "generate") && jsonData.travel_plan) {
     const planData = {
       userid: userStore.userInfo.id,
       chatid: props.chatId,

@@ -213,7 +213,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick, onUnmounted } from 'vue';
+import { ref, computed, onMounted, watch, nextTick, onUnmounted, defineExpose } from 'vue';
 import { getPlanDetail } from '@/api/plan.js';
 import { searchAccurateAttraction } from '@/api/attraction.js';
 import { getCityDetail, getCityCenterDetail } from '@/api/city.js';
@@ -249,6 +249,12 @@ const morningFoodList = ref([]);
 const afternoonFoodList = ref([]);
 
 const mapRef = ref(null);
+
+// 添加 refresh 方法
+const refresh = async () => {
+  console.log('【TripPlan组件】刷新计划数据');
+  await fetchPlanData();
+};
 
 // 加载CSV数据
 const loadSceneData = async () => {
@@ -564,6 +570,11 @@ onUnmounted(() => {
   if (mapRef.value) {
     mapRef.value.destroy();
   }
+});
+
+// 暴露方法给父组件
+defineExpose({
+  refresh
 });
 </script>
 

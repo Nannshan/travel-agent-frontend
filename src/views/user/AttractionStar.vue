@@ -10,7 +10,7 @@
           <template #icon>
             <SearchOutlined />
           </template>
-          浏览景点
+          发现景点
         </a-button>
       </template>
     </a-page-header>
@@ -29,10 +29,13 @@
             />
           </template>
           <a-button
-            type="text"
+            type="primary"
             @click="$router.push('/attraction-home')"
             class="browse-btn"
           >
+            <template #icon>
+              <SearchOutlined />
+            </template>
             立即浏览
           </a-button>
         </a-empty>
@@ -127,14 +130,29 @@ onMounted(() => {
 }
 
 .browse-btn {
-  color: #000;
+  color: #fff;
+  background: #1890ff;
   font-weight: 500;
   transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  height: 40px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .browse-btn:hover {
-  color: #666;
-  background: transparent;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: #40a9ff;
+}
+
+.browse-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  background: #096dd9;
 }
 
 .content-wrapper {
@@ -157,6 +175,10 @@ onMounted(() => {
 
 .custom-empty {
   padding: 48px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
 }
 
 :deep(.ant-empty-image) {

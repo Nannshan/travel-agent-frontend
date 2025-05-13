@@ -316,36 +316,48 @@ const addMarker = async (sceneName, timeSlot, dayIndex) => {
     // 直接使用高德地图的PlaceSearch进行搜索
     return new Promise((resolve) => {
       console.log(`【Map组件】使用PlaceSearch搜索景点: ${sceneName}`);
-      window.AMap.plugin(['AMap.PlaceSearch'], () => {
-        const placeSearch = new window.AMap.PlaceSearch({
-          city: props.planData?.travel_plan?.[0]?.city || '全国',
-          citylimit: true,
-          pageSize: 1
+      
+      const searchWithRetry = (retryCount = 0) => {
+        window.AMap.plugin(['AMap.PlaceSearch'], () => {
+          const placeSearch = new window.AMap.PlaceSearch({
+            city: props.planData?.travel_plan?.[0]?.city || '全国',
+            citylimit: true,
+            pageSize: 1
+          });
+          
+          placeSearch.search(sceneName, (status, result) => {
+            if (status === 'complete' && result.poiList?.pois?.length > 0) {
+              const poi = result.poiList.pois[0];
+              console.log('【Map组件】PlaceSearch找到位置:', poi);
+              
+              const locationData = {
+                longitude: poi.location.lng,
+                latitude: poi.location.lat,
+                address: poi.address,
+                name: sceneName
+              };
+              
+              // 保存到缓存
+              sceneLocationCache.value.set(sceneName, locationData);
+              
+              const marker = createMarker(locationData, timeSlot, dayIndex);
+              resolve(marker);
+            } else {
+              console.warn(`【Map组件】未找到景点 ${sceneName} 的位置信息`);
+              if (retryCount < 2) { 
+                console.log(`【Map组件】1秒后重试搜索景点: ${sceneName}`);
+                setTimeout(() => {
+                  searchWithRetry(retryCount + 1);
+                }, 1000);
+              } else {
+                resolve(null);
+              }
+            }
+          });
         });
-        
-        placeSearch.search(sceneName, (status, result) => {
-          if (status === 'complete' && result.poiList?.pois?.length > 0) {
-            const poi = result.poiList.pois[0];
-            console.log('【Map组件】PlaceSearch找到位置:', poi);
-            
-            const locationData = {
-              longitude: poi.location.lng,
-              latitude: poi.location.lat,
-              address: poi.address,
-              name: sceneName
-            };
-            
-            // 保存到缓存
-            sceneLocationCache.value.set(sceneName, locationData);
-            
-            const marker = createMarker(locationData, timeSlot, dayIndex);
-            resolve(marker);
-          } else {
-            console.warn(`【Map组件】未找到景点 ${sceneName} 的位置信息`);
-            resolve(null);
-          }
-        });
-      });
+      };
+
+      searchWithRetry();
     });
 
   } catch (error) {

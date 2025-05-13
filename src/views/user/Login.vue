@@ -56,7 +56,6 @@
                 </a-form-item>
                 <div class="form-footer">
                   <a-checkbox v-model:checked="rememberMe">记住我</a-checkbox>
-                  <a class="forgot-link">忘记密码？</a>
                 </div>
               </template>
 
@@ -274,7 +273,7 @@ const handleRememberMe = () => {
 const validateEmail = async (rule, value) => {
   const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
   if (!value) {
-    return Promise.reject('请输入邮箱')
+    return Promise.reject()
   } else if (!emailRegex.test(value)) {
     return Promise.reject('请输入有效的邮箱地址')
   }
@@ -335,7 +334,7 @@ const sendVerificationCode = async () => {
     await loginFormRef.value.validateFields(['email'])
     
     loading.value = true
-    await sendEmailCode(loginForm.email)
+    await sendEmailCode(loginForm.email, "login")
     message.success('验证码已发送')
 
     codeCooldown.value = 60
@@ -359,7 +358,7 @@ const sendRegisterVerificationCode = async () => {
     await registerFormRef.value.validateFields(['email'])
     
     loading.value = true
-    await sendEmailCode(registerForm.email)
+    await sendEmailCode(registerForm.email, "register")
     message.success('验证码已发送')
 
     registerCodeCooldown.value = 60
@@ -425,7 +424,7 @@ const handleRegister = async (values) => {
     loading.value = true
     const res = await signup({
       email: values.email,
-      nickname: values.nickname,
+      name: values.nickname,
       password: values.password,
       code: values.verificationCode // 添加验证码
     })
@@ -438,7 +437,7 @@ const handleRegister = async (values) => {
         password: values.password
       })
       userStore.setUserInfo(loginRes.data)
-      router.push('/user-plan')
+      router.push('/agent')
     }
   } catch (error) {
     if (error.response?.status === 400) {

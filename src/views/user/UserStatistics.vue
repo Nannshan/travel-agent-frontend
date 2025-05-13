@@ -8,7 +8,17 @@
         </div>
         <div class="stat-content">
           <div class="stat-value">{{ stats.chat_count }}</div>
-          <div class="stat-label">对话次数</div>
+          <div class="stat-label">当前聊天数</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">
+          <message-outlined />
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.max_chat_count }}</div>
+          <div class="stat-label">历史对话次数</div>
         </div>
       </div>
       
@@ -18,7 +28,17 @@
         </div>
         <div class="stat-content">
           <div class="stat-value">{{ stats.plan_count }}</div>
-          <div class="stat-label">行程计划</div>
+          <div class="stat-label">现有行程计划</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">
+          <calendar-outlined />
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.max_plan_count }}</div>
+          <div class="stat-label">历史行程计划</div>
         </div>
       </div>
       
@@ -28,14 +48,24 @@
         </div>
         <div class="stat-content">
           <div class="stat-value">{{ stats.star_count }}</div>
-          <div class="stat-label">收藏景点</div>
+          <div class="stat-label">当前收藏景点</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">
+          <star-outlined />
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.max_star_count }}</div>
+          <div class="stat-label">总计收藏景点</div>
         </div>
       </div>
     </div>
     
     <div class="join-time">
       <clock-circle-outlined />
-      <span>加入时间：{{ formatDate(stats.created_at) }}</span>
+      <span>注册时间：{{ formatDate(stats.created_at) }}</span>
     </div>
   </div>
 </template>
@@ -48,9 +78,12 @@ import { MessageOutlined, CalendarOutlined, StarOutlined, ClockCircleOutlined } 
 const route = useRoute();
 const stats = ref({
   chat_count: 0,
+  max_chat_count: 0,
   plan_count: 0,
+  max_plan_count: 0,
   star_count: 0,
-  created_at: ''
+  max_star_count: 0,
+  created_at: '',
 });
 
 onMounted(() => {
